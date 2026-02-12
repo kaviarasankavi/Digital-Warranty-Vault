@@ -1,0 +1,111 @@
+/* ============================================
+   Dark Header — matches screen.png reference
+   ============================================ */
+
+.dark-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    background: #13121f;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.dark-header .header-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.dark-header .header-title {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.dark-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dark-header .header-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    color: rgba(255, 255, 255, 0.4);
+    min-width: 280px;
+    transition: all 0.2s ease;
+}
+
+.dark-header .header-search:focus-within {
+    border-color: rgba(129, 140, 248, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.dark-header .header-search input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.8);
+    width: 100%;
+}
+
+.dark-header .header-search input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.dark-header .header-notifications {
+    position: relative;
+    background: transparent;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dark-header .header-notifications:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+.notification-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    background: #6366f1;
+    border-radius: 50%;
+    border: 2px solid #13121f;
+}
+
+@media (max-width: 768px) {
+    .dark-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start;
+        padding: 1rem;
+    }
+
+    .dark-header .header-search {
+        min-width: unset;
+        flex: 1;
+        width: 100%;
+    }
+
+    .dark-header .header-right {
+        width: 100%;
+    }
+}

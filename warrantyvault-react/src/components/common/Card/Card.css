@@ -1,0 +1,45 @@
+.card {
+    background: white;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+.card-padding-none {
+    padding: 0;
+}
+
+.card-padding-sm {
+    padding: 1rem;
+}
+
+.card-padding-md {
+    padding: 1.5rem;
+}
+
+.card-padding-lg {
+    padding: 2rem;
+}
+
+.card-header {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 1rem;
+}
+
+.card-body {
+    flex: 1;
+}
+
+.card-footer {
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+    margin-top: 1rem;
+}
