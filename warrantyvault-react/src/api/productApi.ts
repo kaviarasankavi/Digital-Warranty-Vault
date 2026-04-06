@@ -28,9 +28,29 @@ export interface ProductFormData {
     notes: string;
 }
 
+export interface ProductQueryParams {
+    search?: string;
+    category?: string;
+    warrantyStatus?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+}
+
+export interface Pagination {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+}
+
 interface ProductListResponse {
     success: boolean;
     data: Product[];
+    pagination: Pagination;
 }
 
 interface ProductResponse {
@@ -44,9 +64,29 @@ interface DeleteResponse {
     message: string;
 }
 
+interface CategoriesResponse {
+    success: boolean;
+    data: string[];
+}
+
 export const productApi = {
-    getAll: async (): Promise<ProductListResponse> => {
-        const res = await api.get<ProductListResponse>('/products');
+    getAll: async (params?: ProductQueryParams): Promise<ProductListResponse> => {
+        const queryParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== '' && value !== null) {
+                    queryParams.set(key, String(value));
+                }
+            });
+        }
+        const queryString = queryParams.toString();
+        const url = queryString ? `/products?${queryString}` : '/products';
+        const res = await api.get<ProductListResponse>(url);
+        return res.data;
+    },
+
+    getCategories: async (): Promise<CategoriesResponse> => {
+        const res = await api.get<CategoriesResponse>('/products/categories');
         return res.data;
     },
 

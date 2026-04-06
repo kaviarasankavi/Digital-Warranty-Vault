@@ -44,6 +44,21 @@ export default function Login() {
         return Object.keys(newErrors).length === 0;
     };
 
+    // Demo credentials for frontend-only development (no backend needed)
+    const DEMO_USER = {
+        email: 'admin@vault.com',
+        password: 'admin123',
+        user: {
+            id: 'demo-001',
+            email: 'admin@vault.com',
+            name: 'Vault Admin',
+            role: 'admin' as const,
+            avatar: undefined,
+            createdAt: new Date().toISOString(),
+        },
+        token: 'demo-jwt-token',
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) return;
@@ -52,6 +67,7 @@ export default function Login() {
         setApiError(null);
 
         try {
+            // Always try the real backend API first
             const response = await authApi.login({
                 email: formData.email,
                 password: formData.password,
@@ -73,7 +89,23 @@ export default function Login() {
                 navigate('/dashboard');
             }
         } catch (error: any) {
-            const message = error.response?.data?.message || 'Login failed. Please try again.';
+            // If backend is unreachable and demo credentials are used, fall back to demo mode
+            const isNetworkError = !error.response;
+            const isDemoCredentials =
+                formData.email === DEMO_USER.email &&
+                formData.password === DEMO_USER.password;
+
+            if (isNetworkError && isDemoCredentials) {
+                login(DEMO_USER.user, DEMO_USER.token);
+                navigate('/dashboard');
+                return;
+            }
+
+            const message =
+                error.response?.data?.message ||
+                (isNetworkError
+                    ? 'Cannot reach server. Please ensure the backend is running.'
+                    : 'Login failed. Check your credentials.');
             setApiError(message);
         } finally {
             setIsLoading(false);
@@ -127,6 +159,20 @@ export default function Login() {
                             {apiError}
                         </div>
                     )}
+
+                    {/* Demo credentials hint */}
+                    <div className="demo-hint" onClick={() => {
+                        setFormData({ email: 'admin@vault.com', password: 'admin123' });
+                        setErrors({});
+                        setApiError(null);
+                    }}>
+                        <span className="demo-hint-icon">🔑</span>
+                        <div>
+                            <strong>Demo Access</strong>
+                            <span>admin@vault.com · admin123</span>
+                        </div>
+                        <span className="demo-hint-fill">Click to fill</span>
+                    </div>
 
                     <form onSubmit={handleSubmit} className="login-form">
                         <Input

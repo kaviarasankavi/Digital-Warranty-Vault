@@ -3284,7 +3284,7 @@ a {
     flex: 1;
     margin-left: 240px;
     min-height: 100vh;
-    background: #13121f;
+    background: #ffffff;
     transition: margin-left 0.3s ease;
 }
 
@@ -3296,20 +3296,20 @@ a {
     justify-content: center;
     height: 100vh;
     gap: 1rem;
-    background: #13121f;
+    background: #ffffff;
 }
 
 .loader-spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
+    border: 3px solid rgba(0, 0, 0, 0.1);
     border-top-color: #6366f1;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
 
 .page-loader span {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(0, 0, 0, 0.5);
     font-size: 0.875rem;
 }
 

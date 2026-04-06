@@ -151,19 +151,190 @@ A comprehensive solution for managing product warranties, verifying product auth
 
 ## SLIDE 2: ER Diagram
 
-### Entity-Relationship Model
+### Entity-Relationship Model (Chen Notation)
+
+> **Legend:** 🟢 Strong Entity = Green Rectangle | 🟡 Weak Entity = Orange Double-bordered | 💎 Relationship = Blue Diamond | **═══ Thick line** = Total Participation | **- - - Dotted line** = Partial Participation
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontSize': '13px', 'fontFamily': 'arial'}}}%%
+flowchart LR
+    %% ===================== ENTITIES =====================
+
+    USER["🟢 <b>USER</b> (Strong)
+    ─────────────────
+    <u>_id</u> (PK)
+    email (UK)
+    password_hash
+    role
+    linked_vendor_id (FK)
+    linked_owner_id (FK)
+    status
+    email_verified
+    last_login"]
+
+    VENDOR["🟢 <b>VENDOR</b> (Strong)
+    ─────────────────
+    <u>vendor_id</u> (PK)
+    name
+    contact_email (UK)
+    public_key
+    description
+    address
+    status
+    created_at | updated_at"]
+
+    PRODUCT["🟢 <b>PRODUCT</b> (Strong)
+    ─────────────────
+    <u>product_id</u> (PK)
+    vendor_id (FK)
+    model_code (UK)
+    name | category
+    specifications
+    warranty_policy
+    images | status
+    created_at | updated_at"]
+
+    PS["🟢 <b>PRODUCT_SERIAL</b> (Strong)
+    ─────────────────
+    <u>serial_id</u> (PK)
+    product_id (FK)
+    serial_hash (UK)
+    encrypted_serial
+    manufacture_date
+    batch_number
+    qr_code_data
+    vendor_signature
+    status | registration_date
+    created_at | updated_at"]
+
+    OWNER["🟢 <b>OWNER</b> (Strong)
+    ─────────────────
+    <u>owner_id</u> (PK)
+    name
+    contact | address
+    identity_verified
+    identity_documents
+    status
+    created_at | updated_at"]
+
+    WARRANTY["🟡 <b>WARRANTY</b> (Weak)
+    ─────────────────
+    <u>warranty_id</u> (PK)
+    serial_id (FK)
+    warranty_start
+    warranty_end
+    warranty_type
+    coverage_details
+    claims | status
+    notification_sent
+    created_at | updated_at"]
+
+    OH["🟡 <b>OWNERSHIP_HISTORY</b> (Weak)
+    ─────────────────
+    <u>relationship_id</u> (PK)
+    serial_id (FK)
+    owner_id (FK)
+    acquired_at
+    relinquished_at
+    proof_document
+    transfer_type"]
+
+    AC["🟡 <b>AUTHENTICITY_CHECK</b> (Weak)
+    ─────────────────
+    <u>check_id</u> (PK)
+    serial_hash
+    checked_at
+    verification_result
+    verification_details
+    signature
+    location_data"]
+
+    %% =============== RELATIONSHIPS ===============
+
+    R1{"💎 MANUFACTURES
+    1 : N"}
+    R2{"💎 HAS_INSTANCES
+    1 : N"}
+    R3{"💎 COVERED_BY
+    1 : 1"}
+    R4{"💎 CURRENTLY
+    OWNED_BY
+    N : 1"}
+    R5{"💎 TRACKED_IN
+    1 : N"}
+    R6{"💎 HAS_HISTORY
+    1 : N"}
+    R7{"💎 VERIFIED
+    THROUGH
+    1 : N"}
+    R8{"💎 LINKED
+    VENDOR
+    N : 0..1"}
+    R9{"💎 LINKED
+    OWNER
+    N : 0..1"}
+
+    %% =============== CONNECTIONS ===============
+    %% Partial = dotted (-.-), Total = thick (===)
+
+    VENDOR -.-|"1 Partial"| R1
+    R1 ===|"N Total"| PRODUCT
+
+    PRODUCT -.-|"1 Partial"| R2
+    R2 ===|"N Total"| PS
+
+    PS -.-|"1 Partial"| R3
+    R3 ===|"1 Total"| WARRANTY
+
+    PS -.-|"N Partial"| R4
+    R4 -.-|"1 Partial"| OWNER
+
+    PS -.-|"1 Partial"| R5
+    R5 ===|"N Total"| OH
+
+    OWNER -.-|"1 Partial"| R6
+    R6 ===|"N Total"| OH
+
+    PS -.-|"1 Partial"| R7
+    R7 ===|"N Total"| AC
+
+    USER -.-|"N Partial"| R8
+    R8 -.-|"0..1 Partial"| VENDOR
+
+    USER -.-|"N Partial"| R9
+    R9 -.-|"0..1 Partial"| OWNER
+
+    %% =============== STYLING ===============
+    classDef strongEntity fill:#2E7D32,stroke:#1B5E20,stroke-width:3px,color:#fff,font-size:12px
+    classDef weakEntity fill:#E65100,stroke:#BF360C,stroke-width:5px,color:#fff,font-size:12px
+    classDef rel fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1,font-weight:bold
+
+    class USER,VENDOR,PRODUCT,PS,OWNER strongEntity
+    class WARRANTY,OH,AC weakEntity
+    class R1,R2,R3,R4,R5,R6,R7,R8,R9 rel
+```
+
+> [!NOTE]
+> **How to read this diagram:**
+> - **Dotted lines (`-.-`)** → Partial participation (entity *may or may not* participate)
+> - **Thick lines (`===`)** → Total participation (every instance *must* participate)
+> - **Green boxes** → Strong entities (exist independently)
+> - **Orange double-bordered boxes** → Weak entities (depend on a parent entity)
+> - **Blue diamonds** → Relationships with cardinality labels
+
+### Simplified erDiagram View (Alternative)
 
 ```mermaid
 erDiagram
-    VENDOR ||--o{ PRODUCT : manufactures
-    PRODUCT ||--o{ PRODUCT_SERIAL : "has instances"
-    PRODUCT_SERIAL ||--o| WARRANTY : "covered by"
-    PRODUCT_SERIAL }o--|| OWNER : "currently owned by"
-    OWNER ||--o{ OWNERSHIP_HISTORY : "has history"
-    PRODUCT_SERIAL ||--o{ OWNERSHIP_HISTORY : "tracked in"
-    PRODUCT_SERIAL ||--o{ AUTHENTICITY_CHECK : "verified through"
-    USER }o--o| VENDOR : "may be linked to"
-    USER }o--o| OWNER : "may be linked to"
+    VENDOR ||--o{ PRODUCT : "MANUFACTURES (1:N)"
+    PRODUCT ||--o{ PRODUCT_SERIAL : "HAS_INSTANCES (1:N)"
+    PRODUCT_SERIAL ||--o| WARRANTY : "COVERED_BY (1:1)"
+    PRODUCT_SERIAL }o--|| OWNER : "CURRENTLY_OWNED_BY (N:1)"
+    OWNER ||--o{ OWNERSHIP_HISTORY : "HAS_HISTORY (1:N)"
+    PRODUCT_SERIAL ||--o{ OWNERSHIP_HISTORY : "TRACKED_IN (1:N)"
+    PRODUCT_SERIAL ||--o{ AUTHENTICITY_CHECK : "VERIFIED_THROUGH (1:N)"
+    USER }o--o| VENDOR : "LINKED_VENDOR (N:0..1)"
+    USER }o--o| OWNER : "LINKED_OWNER (N:0..1)"
     
     VENDOR {
         int vendor_id PK
@@ -268,27 +439,129 @@ erDiagram
     }
 ```
 
-### Key Relationships
+---
 
-1. **Vendor ➜ Product** (1:N)
-   - Each vendor manufactures multiple products
-   - Products belong to one vendor
+### Entity Classification: Strong vs Weak Entities
 
-2. **Product ➜ Product Serial** (1:N)
-   - Each product model has multiple serial instances
-   - Each serial belongs to one product model
+| Entity | Type | Justification |
+|--------|------|---------------|
+| **VENDOR** | 🟢 **Strong Entity** | Has its own primary key (`vendor_id`); exists independently |
+| **PRODUCT** | 🟢 **Strong Entity** | Has its own primary key (`product_id`); uniquely identified by `model_code` |
+| **PRODUCT_SERIAL** | 🟢 **Strong Entity** | Has its own primary key (`serial_id`); uniquely identified by `serial_hash` |
+| **OWNER** | 🟢 **Strong Entity** | Has its own primary key (`owner_id`); exists independently |
+| **USER** | 🟢 **Strong Entity** | Has its own primary key (`_id`); exists independently |
+| **WARRANTY** | 🟡 **Weak Entity** | Depends on `PRODUCT_SERIAL` for existence — a warranty cannot exist without a serial; identified by `warranty_id` + parent `serial_id` |
+| **OWNERSHIP_HISTORY** | 🟡 **Weak Entity** | Depends on both `PRODUCT_SERIAL` and `OWNER` for existence — a history record is meaningless without both; identified by `relationship_id` + parent FKs |
+| **AUTHENTICITY_CHECK** | 🟡 **Weak Entity** | Depends on `PRODUCT_SERIAL` for existence — a verification check cannot exist without a serial to verify |
 
-3. **Product Serial ➜ Warranty** (1:1)
-   - Each serial has one warranty
-   - Warranty covers one specific serial
+> [!NOTE]
+> **Weak entities** are drawn with **double-bordered rectangles** in traditional ER notation. They depend on their **identifying (owner) entity** for their existence and cannot be uniquely identified without the parent's key.
 
-4. **Product Serial ➜ Owner** (N:1 current, N:N historical via Neo4j)
-   - Each serial currently owned by one owner (in MongoDB)
-   - Full ownership chain tracked in Neo4j graph
+---
 
-5. **Product Serial ➜ Authenticity Check** (1:N)
-   - Each serial can be verified multiple times
-   - Checks logged for audit trail
+### Relationships with Cardinality
+
+| # | Relationship Name | Entities | Cardinality | Description |
+|---|-------------------|----------|-------------|-------------|
+| R1 | **MANUFACTURES** | VENDOR → PRODUCT | **1 : N** | One vendor manufactures many products; each product belongs to exactly one vendor |
+| R2 | **HAS_INSTANCES** | PRODUCT → PRODUCT_SERIAL | **1 : N** | One product model has many serial instances; each serial belongs to exactly one product |
+| R3 | **COVERED_BY** | PRODUCT_SERIAL → WARRANTY | **1 : 1** | One serial is covered by at most one warranty; one warranty covers exactly one serial |
+| R4 | **CURRENTLY_OWNED_BY** | PRODUCT_SERIAL → OWNER | **N : 1** | Many serials can be owned by one owner; each serial is currently owned by one owner |
+| R5 | **TRACKED_IN** | PRODUCT_SERIAL → OWNERSHIP_HISTORY | **1 : N** | One serial has many ownership history records; each history record belongs to one serial |
+| R6 | **HAS_HISTORY** | OWNER → OWNERSHIP_HISTORY | **1 : N** | One owner has many ownership history records; each history record belongs to one owner |
+| R7 | **VERIFIED_THROUGH** | PRODUCT_SERIAL → AUTHENTICITY_CHECK | **1 : N** | One serial can be verified many times; each check belongs to one serial |
+| R8 | **LINKED_VENDOR** | USER → VENDOR | **N : 0..1** | Many users can optionally link to one vendor; a vendor can have zero or one linked user |
+| R9 | **LINKED_OWNER** | USER → OWNER | **N : 0..1** | Many users can optionally link to one owner; an owner can have zero or one linked user |
+
+---
+
+### Participation Constraints: Total vs Partial
+
+> **Total Participation (═══):** Every instance of the entity **must** participate in the relationship. Represented by **double lines** in ER diagrams.
+>
+> **Partial Participation (───):** Some instances of the entity **may or may not** participate. Represented by **single lines** in ER diagrams.
+
+| # | Relationship | Left Entity | Left Participation | Right Entity | Right Participation |
+|---|-------------|-------------|-------------------|--------------|-------------------|
+| R1 | MANUFACTURES | **VENDOR** | ⚪ **Partial** — a vendor may exist without products | **PRODUCT** | ⚫ **Total** — every product must have a vendor |
+| R2 | HAS_INSTANCES | **PRODUCT** | ⚪ **Partial** — a product may have no serials yet | **PRODUCT_SERIAL** | ⚫ **Total** — every serial must belong to a product |
+| R3 | COVERED_BY | **PRODUCT_SERIAL** | ⚪ **Partial** — a serial may not yet have a warranty | **WARRANTY** | ⚫ **Total** — every warranty must cover a serial (weak entity dependency) |
+| R4 | CURRENTLY_OWNED_BY | **PRODUCT_SERIAL** | ⚪ **Partial** — a serial may be unregistered/unsold | **OWNER** | ⚪ **Partial** — an owner may exist without owning any serial |
+| R5 | TRACKED_IN | **PRODUCT_SERIAL** | ⚪ **Partial** — a serial may have no ownership history | **OWNERSHIP_HISTORY** | ⚫ **Total** — every history record must reference a serial (weak entity dependency) |
+| R6 | HAS_HISTORY | **OWNER** | ⚪ **Partial** — an owner may have no history records | **OWNERSHIP_HISTORY** | ⚫ **Total** — every history record must reference an owner (weak entity dependency) |
+| R7 | VERIFIED_THROUGH | **PRODUCT_SERIAL** | ⚪ **Partial** — a serial may never be verified | **AUTHENTICITY_CHECK** | ⚫ **Total** — every check must reference a serial (weak entity dependency) |
+| R8 | LINKED_VENDOR | **USER** | ⚪ **Partial** — a user may not be linked to any vendor | **VENDOR** | ⚪ **Partial** — a vendor may not have a linked user |
+| R9 | LINKED_OWNER | **USER** | ⚪ **Partial** — a user may not be linked to any owner | **OWNER** | ⚪ **Partial** — an owner may not have a linked user |
+
+---
+
+### Visual Summary of ER Notation
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        ER NOTATION LEGEND                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────┐     Strong Entity       ╔══════════╗     Weak Entity          │
+│  │  VENDOR   │     (single border)     ║ WARRANTY ║     (double border)     │
+│  └──────────┘                          ╚══════════╝                         │
+│                                                                             │
+│  ───────────      Partial              ═══════════     Total                │
+│                   Participation                        Participation        │
+│                   (single line)                        (double line)        │
+│                                                                             │
+│  ◇ RELATIONSHIP   Regular              ◆ RELATIONSHIP  Identifying          │
+│                    Relationship                        Relationship         │
+│                    (single diamond)                    (double diamond)     │
+│                                                                             │
+│  1 ──── N         One-to-Many          1 ──── 1       One-to-One           │
+│  N ──── M         Many-to-Many         0..1 ── N      Optional-to-Many     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Detailed ER Diagram Structure
+
+```
+                                    STRONG ENTITIES
+    ┌──────────┐    1      N    ┌──────────┐    1      N    ┌────────────────┐
+    │  VENDOR  │───MANUFACTURES──│ PRODUCT  │──HAS_INSTANCES──│ PRODUCT_SERIAL │
+    └──────────┘   (Partial→     └──────────┘  (Partial→     └────────────────┘
+                    Total)                      Total)          │   │   │   │
+                                                                │   │   │   │
+    ┌──────┐  0..1    N                              N:1 ───────┘   │   │   │
+    │ USER │──LINKED_VENDOR──                 CURRENTLY_OWNED_BY    │   │   │
+    └──────┘  (Partial→       ┌──────────┐←─(Partial → Partial)────┘   │   │
+       │       Partial)       │  OWNER   │                              │   │
+       │                      └──────────┘                              │   │
+       └──LINKED_OWNER──→        │                                      │   │
+          0..1    N              │ 1                                     │   │
+          (Partial→              │                                       │   │
+           Partial)              │ HAS_HISTORY         WEAK ENTITIES     │   │
+                                 │ (Partial→Total)                       │   │
+                                 ↓ N                                     │   │
+                          ╔═══════════════════╗                          │   │
+                          ║ OWNERSHIP_HISTORY ║←──TRACKED_IN 1:N ───────┘   │
+                          ╚═══════════════════╝   (Partial→Total)           │
+                                                                            │
+                          ╔═══════════════════╗                             │
+              1:1         ║    WARRANTY       ║←──COVERED_BY ───────────────┤
+          (Partial→Total) ╚═══════════════════╝                             │
+                                                                            │
+                          ╔═══════════════════╗                             │
+              1:N         ║AUTHENTICITY_CHECK ║←──VERIFIED_THROUGH ─────────┘
+          (Partial→Total) ╚═══════════════════╝
+```
+
+### Key Observations
+
+1. **PRODUCT_SERIAL is the central entity** — it participates in the most relationships (6 relationships), acting as the hub connecting products, warranties, owners, history, and verification.
+
+2. **All weak entities have total participation** on their side — `WARRANTY`, `OWNERSHIP_HISTORY`, and `AUTHENTICITY_CHECK` must always reference their parent entity because they cannot exist independently.
+
+3. **USER has only partial participation** in both its relationships (LINKED_VENDOR, LINKED_OWNER) — a user account may or may not be linked to a vendor or owner profile.
+
+4. **The OWNERSHIP_HISTORY entity** is a weak entity dependent on **two** strong entities (PRODUCT_SERIAL and OWNER), making it an **associative weak entity** that tracks the M:N historical relationship.
 
 ---
 

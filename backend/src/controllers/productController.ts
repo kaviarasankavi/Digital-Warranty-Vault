@@ -1,212 +1,333 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { getDB } from '../config/database-sqlite';
+import { getSQL } from '../config/database-postgres';
 import { logger } from '../utils/logger';
+import { asyncHandler } from '../utils/asyncHandler';
+import {
+    AuthenticationError,
+    ValidationError,
+    NotFoundError,
+} from '../utils/errors';
+import { logAuditEvent } from '../services/auditLogService';
 
-// GET /api/products — List all products for the authenticated user
-export const getProducts = (req: AuthRequest, res: Response): void => {
-    try {
-        const userId = req.user?._id?.toString();
-        if (!userId) {
-            res.status(401).json({ success: false, message: 'Unauthorized' });
-            return;
-        }
-
-        const db = getDB();
-        const products = db
-            .prepare('SELECT * FROM products WHERE userId = ? ORDER BY createdAt DESC')
-            .all(userId);
-
-        res.json({ success: true, data: products });
-    } catch (error) {
-        logger.error('Get products error:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch products.' });
-    }
+// ─── Allowed sort columns (whitelist to prevent SQL injection) ─────────
+const ALLOWED_SORT_COLUMNS: Record<string, string> = {
+    name: 'name',
+    purchasePrice: '"purchasePrice"',
+    purchaseDate: '"purchaseDate"',
+    warrantyExpiry: '"warrantyExpiry"',
+    createdAt: '"createdAt"',
 };
+
+// GET /api/products — List products with server-side search, filter, sort & pagination
+export const getProducts = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const userId = req.user?._id?.toString();
+    if (!userId) {
+        throw new AuthenticationError('Unauthorized');
+    }
+
+    // ── Parse query params ──
+    const {
+        search,
+        category,
+        warrantyStatus,
+        minPrice,
+        maxPrice,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        page = '1',
+        limit = '12',
+    } = req.query as Record<string, string | undefined>;
+
+    const pageNum = Math.max(1, parseInt(page || '1', 10));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit || '12', 10)));
+    const offset = (pageNum - 1) * limitNum;
+
+    // ── Validate sortBy against whitelist ──
+    const sortColumn = ALLOWED_SORT_COLUMNS[sortBy || 'createdAt'] || '"createdAt"';
+    const sortDir = sortOrder?.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+    const sql = getSQL();
+
+    // ── Build dynamic parameterized query ──
+    let conditions = `WHERE p."userId" = $1`;
+    const params: any[] = [userId];
+    let paramIndex = 2;
+
+    // Search (name, brand, serialNumber)
+    if (search && search.trim()) {
+        const searchPattern = `%${search.trim()}%`;
+        conditions += ` AND (p.name ILIKE $${paramIndex} OR p.brand ILIKE $${paramIndex} OR p."serialNumber" ILIKE $${paramIndex})`;
+        params.push(searchPattern);
+        paramIndex++;
+    }
+
+    // Category filter
+    if (category && category.trim()) {
+        conditions += ` AND p.category = $${paramIndex}`;
+        params.push(category.trim());
+        paramIndex++;
+    }
+
+    // Price range
+    if (minPrice) {
+        const min = parseFloat(minPrice);
+        if (!isNaN(min)) {
+            conditions += ` AND p."purchasePrice" >= $${paramIndex}`;
+            params.push(min);
+            paramIndex++;
+        }
+    }
+    if (maxPrice) {
+        const max = parseFloat(maxPrice);
+        if (!isNaN(max)) {
+            conditions += ` AND p."purchasePrice" <= $${paramIndex}`;
+            params.push(max);
+            paramIndex++;
+        }
+    }
+
+    // Warranty status filter (requires JOIN with warranty_status table)
+    let joinClause = '';
+    if (warrantyStatus && warrantyStatus.trim()) {
+        joinClause = ` LEFT JOIN warranty_status ws ON ws.product_id = p.id`;
+        conditions += ` AND ws.status = $${paramIndex}`;
+        params.push(warrantyStatus.trim());
+        paramIndex++;
+    }
+
+    // ── Count query (for pagination) ──
+    const countQuery = `SELECT COUNT(*) as total FROM products p${joinClause} ${conditions}`;
+    const countResult = await sql.query(countQuery, params) as any;
+    const totalCount = parseInt(countResult[0]?.total || '0', 10);
+    const totalPages = Math.ceil(totalCount / limitNum);
+
+    // ── Data query ──
+    const dataParams = [...params, limitNum, offset];
+    const dataQuery = `SELECT p.* FROM products p${joinClause} ${conditions} ORDER BY p.${sortColumn} ${sortDir} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+
+    const products = await sql.query(dataQuery, dataParams) as any;
+
+    res.json({
+        success: true,
+        data: products,
+        pagination: {
+            page: pageNum,
+            limit: limitNum,
+            totalCount,
+            totalPages,
+        },
+    });
+});
+
+// GET /api/products/categories — Get distinct categories for filter dropdown
+export const getCategories = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const userId = req.user?._id?.toString();
+    if (!userId) {
+        throw new AuthenticationError('Unauthorized');
+    }
+
+    const sql = getSQL();
+    const categories = await sql`
+        SELECT DISTINCT category FROM products
+        WHERE "userId" = ${userId} AND category != ''
+        ORDER BY category ASC
+    ` as any[];
+
+    res.json({
+        success: true,
+        data: categories.map((c: any) => c.category),
+    });
+});
 
 // GET /api/products/:id — Get a single product
-export const getProduct = (req: AuthRequest, res: Response): void => {
-    try {
-        const userId = req.user?._id?.toString();
-        const { id } = req.params;
-
-        const db = getDB();
-        const product = db
-            .prepare('SELECT * FROM products WHERE id = ? AND userId = ?')
-            .get(id, userId);
-
-        if (!product) {
-            res.status(404).json({ success: false, message: 'Product not found.' });
-            return;
-        }
-
-        res.json({ success: true, data: product });
-    } catch (error) {
-        logger.error('Get product error:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch product.' });
+export const getProduct = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const userId = req.user?._id?.toString();
+    if (!userId) {
+        throw new AuthenticationError('Unauthorized');
     }
-};
+
+    const id = req.params.id as string;
+
+    // Validate that id is numeric to prevent SQL type errors
+    if (!/^\d+$/.test(id)) {
+        throw new NotFoundError('Product');
+    }
+
+    const sql = getSQL();
+    const products = await sql`
+        SELECT * FROM products WHERE id = ${id} AND "userId" = ${userId}
+    ` as any[];
+
+    if (products.length === 0) {
+        throw new NotFoundError('Product');
+    }
+
+    res.json({ success: true, data: products[0] });
+});
 
 // POST /api/products — Create a new product
-export const createProduct = (req: AuthRequest, res: Response): void => {
-    try {
-        const userId = req.user?._id?.toString();
-        if (!userId) {
-            res.status(401).json({ success: false, message: 'Unauthorized' });
-            return;
-        }
-
-        const {
-            name,
-            brand,
-            model,
-            serialNumber,
-            category,
-            purchaseDate,
-            purchasePrice,
-            warrantyExpiry,
-            notes,
-        } = req.body;
-
-        if (!name || !name.trim()) {
-            res.status(400).json({ success: false, message: 'Product name is required.' });
-            return;
-        }
-
-        const db = getDB();
-        const stmt = db.prepare(`
-            INSERT INTO products (userId, name, brand, model, serialNumber, category, purchaseDate, purchasePrice, warrantyExpiry, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-
-        const result = stmt.run(
-            userId,
-            name.trim(),
-            brand || '',
-            model || '',
-            serialNumber || '',
-            category || '',
-            purchaseDate || '',
-            purchasePrice || 0,
-            warrantyExpiry || '',
-            notes || ''
-        );
-
-        const product = db
-            .prepare('SELECT * FROM products WHERE id = ?')
-            .get(result.lastInsertRowid);
-
-        logger.info(`Product created: ${name} (user: ${userId})`);
-
-        res.status(201).json({
-            success: true,
-            message: 'Product added successfully.',
-            data: product,
-        });
-    } catch (error) {
-        logger.error('Create product error:', error);
-        res.status(500).json({ success: false, message: 'Failed to create product.' });
+export const createProduct = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const userId = req.user?._id?.toString();
+    if (!userId) {
+        throw new AuthenticationError('Unauthorized');
     }
-};
+
+    const {
+        name,
+        brand,
+        model,
+        serialNumber,
+        category,
+        purchaseDate,
+        purchasePrice,
+        warrantyExpiry,
+        notes,
+    } = req.body;
+
+    if (!name || !name.trim()) {
+        throw new ValidationError('Product name is required.');
+    }
+
+    const sql = getSQL();
+    const result = await sql`
+        INSERT INTO products ("userId", name, brand, model, "serialNumber", category, "purchaseDate", "purchasePrice", "warrantyExpiry", notes)
+        VALUES (${userId}, ${name.trim()}, ${brand || ''}, ${model || ''}, ${serialNumber || ''}, ${category || ''}, ${purchaseDate || ''}, ${purchasePrice || 0}, ${warrantyExpiry || ''}, ${notes || ''})
+        RETURNING *
+    ` as any[];
+
+    logger.info(`Product created: ${name} (user: ${userId})`);
+
+    // ── Audit Log ──
+    logAuditEvent({
+        userId,
+        userName: req.user?.name || 'Unknown',
+        userEmail: req.user?.email || 'unknown',
+        action: 'INSERT',
+        productId: result[0]?.id,
+        productName: name.trim(),
+        oldData: null,
+        newData: result[0],
+        ipAddress: req.ip,
+    });
+
+    res.status(201).json({
+        success: true,
+        message: 'Product added successfully.',
+        data: result[0],
+    });
+});
 
 // PUT /api/products/:id — Update a product
-export const updateProduct = (req: AuthRequest, res: Response): void => {
-    try {
-        const userId = req.user?._id?.toString();
-        const { id } = req.params;
-
-        const db = getDB();
-
-        // Check ownership
-        const existing = db
-            .prepare('SELECT * FROM products WHERE id = ? AND userId = ?')
-            .get(id, userId);
-
-        if (!existing) {
-            res.status(404).json({ success: false, message: 'Product not found.' });
-            return;
-        }
-
-        const {
-            name,
-            brand,
-            model,
-            serialNumber,
-            category,
-            purchaseDate,
-            purchasePrice,
-            warrantyExpiry,
-            notes,
-        } = req.body;
-
-        if (!name || !name.trim()) {
-            res.status(400).json({ success: false, message: 'Product name is required.' });
-            return;
-        }
-
-        db.prepare(`
-            UPDATE products
-            SET name = ?, brand = ?, model = ?, serialNumber = ?, category = ?,
-                purchaseDate = ?, purchasePrice = ?, warrantyExpiry = ?, notes = ?,
-                updatedAt = datetime('now')
-            WHERE id = ? AND userId = ?
-        `).run(
-            name.trim(),
-            brand || '',
-            model || '',
-            serialNumber || '',
-            category || '',
-            purchaseDate || '',
-            purchasePrice || 0,
-            warrantyExpiry || '',
-            notes || '',
-            id,
-            userId
-        );
-
-        const updated = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
-
-        logger.info(`Product updated: ${name} (id: ${id})`);
-
-        res.json({
-            success: true,
-            message: 'Product updated successfully.',
-            data: updated,
-        });
-    } catch (error) {
-        logger.error('Update product error:', error);
-        res.status(500).json({ success: false, message: 'Failed to update product.' });
+export const updateProduct = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const userId = req.user?._id?.toString();
+    if (!userId) {
+        throw new AuthenticationError('Unauthorized');
     }
-};
+
+    const { id } = req.params;
+
+    const sql = getSQL();
+
+    // Check ownership
+    const existing = await sql`
+        SELECT * FROM products WHERE id = ${id} AND "userId" = ${userId}
+    ` as any[];
+
+    if (existing.length === 0) {
+        throw new NotFoundError('Product');
+    }
+
+    const {
+        name,
+        brand,
+        model,
+        serialNumber,
+        category,
+        purchaseDate,
+        purchasePrice,
+        warrantyExpiry,
+        notes,
+    } = req.body;
+
+    if (!name || !name.trim()) {
+        throw new ValidationError('Product name is required.');
+    }
+
+    const result = await sql`
+        UPDATE products
+        SET name = ${name.trim()}, brand = ${brand || ''}, model = ${model || ''}, 
+            "serialNumber" = ${serialNumber || ''}, category = ${category || ''},
+            "purchaseDate" = ${purchaseDate || ''}, "purchasePrice" = ${purchasePrice || 0}, 
+            "warrantyExpiry" = ${warrantyExpiry || ''}, notes = ${notes || ''},
+            "updatedAt" = NOW()
+        WHERE id = ${id} AND "userId" = ${userId}
+        RETURNING *
+    ` as any[];
+
+    logger.info(`Product updated: ${name} (id: ${id})`);
+
+    // ── Audit Log ──
+    logAuditEvent({
+        userId,
+        userName: req.user?.name || 'Unknown',
+        userEmail: req.user?.email || 'unknown',
+        action: 'UPDATE',
+        productId: parseInt(String(id), 10),
+        productName: name.trim(),
+        oldData: existing[0],
+        newData: result[0],
+        ipAddress: req.ip,
+    });
+
+    res.json({
+        success: true,
+        message: 'Product updated successfully.',
+        data: result[0],
+    });
+});
 
 // DELETE /api/products/:id — Delete a product
-export const deleteProduct = (req: AuthRequest, res: Response): void => {
-    try {
-        const userId = req.user?._id?.toString();
-        const { id } = req.params;
-
-        const db = getDB();
-
-        // Check ownership
-        const existing = db
-            .prepare('SELECT * FROM products WHERE id = ? AND userId = ?')
-            .get(id, userId);
-
-        if (!existing) {
-            res.status(404).json({ success: false, message: 'Product not found.' });
-            return;
-        }
-
-        db.prepare('DELETE FROM products WHERE id = ? AND userId = ?').run(id, userId);
-
-        logger.info(`Product deleted: id ${id} (user: ${userId})`);
-
-        res.json({
-            success: true,
-            message: 'Product deleted successfully.',
-        });
-    } catch (error) {
-        logger.error('Delete product error:', error);
-        res.status(500).json({ success: false, message: 'Failed to delete product.' });
+export const deleteProduct = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const userId = req.user?._id?.toString();
+    if (!userId) {
+        throw new AuthenticationError('Unauthorized');
     }
-};
+
+    const { id } = req.params;
+
+    const sql = getSQL();
+
+    // Check ownership
+    const existing = await sql`
+        SELECT * FROM products WHERE id = ${id} AND "userId" = ${userId}
+    ` as any[];
+
+    if (existing.length === 0) {
+        throw new NotFoundError('Product');
+    }
+
+    await sql`
+        DELETE FROM products WHERE id = ${id} AND "userId" = ${userId}
+    `;
+
+    logger.info(`Product deleted: id ${id} (user: ${userId})`);
+
+    // ── Audit Log ──
+    logAuditEvent({
+        userId,
+        userName: req.user?.name || 'Unknown',
+        userEmail: req.user?.email || 'unknown',
+        action: 'DELETE',
+        productId: parseInt(String(id), 10),
+        productName: existing[0]?.name || 'Unknown',
+        oldData: existing[0],
+        newData: null,
+        ipAddress: req.ip,
+    });
+
+    res.json({
+        success: true,
+        message: 'Product deleted successfully.',
+    });
+});

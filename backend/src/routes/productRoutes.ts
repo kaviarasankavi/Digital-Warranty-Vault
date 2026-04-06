@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
     getProducts,
     getProduct,
+    getCategories,
     createProduct,
     updateProduct,
     deleteProduct,
@@ -14,9 +15,11 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', getProducts);
+router.get('/categories', getCategories);
 router.get('/:id', getProduct);
 router.post('/', createProduct);
 router.put('/:id', updateProduct);
 router.delete('/:id', deleteProduct);
 
 export default router;
+

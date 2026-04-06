@@ -3,26 +3,35 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar } from './components/layout/Sidebar';
 import { useAuthStore } from './store/authStore';
+import { useAdminAuthStore } from './store/adminAuthStore';
 import './styles.css';
 
-// Lazy load pages
+// ── User pages (lazy) ─────────────────────────────────────────────────────────
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Products = lazy(() => import('./pages/Products/Products'));
+const Warranties = lazy(() => import('./pages/Warranties/Warranties'));
+const Owners = lazy(() => import('./pages/Owners/Owners'));
+const Verify = lazy(() => import('./pages/Authenticity/Verify'));
+const Settings = lazy(() => import('./pages/Settings/Settings'));
+const Analytics = lazy(() => import('./pages/Analytics'));
 const Login = lazy(() => import('./pages/Auth/Login'));
 const Register = lazy(() => import('./pages/Auth/Register'));
 const LandingPage = lazy(() => import('./pages/Landing'));
 
-// Create a client
+// ── Admin pages (lazy) ────────────────────────────────────────────────────────
+const AdminLogin = lazy(() => import('./pages/Admin/AdminLogin'));
+const AdminLayout = lazy(() => import('./pages/Admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+const AdminProducts = lazy(() => import('./pages/Admin/AdminProducts'));
+const AdminWarranties = lazy(() => import('./pages/Admin/AdminWarranties'));
+const AdminOwners = lazy(() => import('./pages/Admin/AdminOwners'));
+const AdminAuthenticity = lazy(() => import('./pages/Admin/AdminAuthenticity'));
+const AdminSettings = lazy(() => import('./pages/Admin/AdminSettings'));
+
 const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutes
-            refetchOnWindowFocus: false,
-        },
-    },
+    defaultOptions: { queries: { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false } },
 });
 
-// Loading fallback
 function PageLoader() {
     return (
         <div className="page-loader">
@@ -32,18 +41,19 @@ function PageLoader() {
     );
 }
 
-// Protected route wrapper
+// ── User route guards ─────────────────────────────────────────────────────────
 function ProtectedRoute() {
     const { isAuthenticated } = useAuthStore();
-
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
-
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
     return <Outlet />;
 }
 
-// Dashboard layout wrapper
+function PublicRoute({ children }: { children: React.ReactNode }) {
+    const { isAuthenticated } = useAuthStore();
+    if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+    return <>{children}</>;
+}
+
 function DashboardLayout() {
     return (
         <div className="app-layout">
@@ -57,62 +67,64 @@ function DashboardLayout() {
     );
 }
 
-// Public route (redirect to dashboard if logged in)
-function PublicRoute({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated } = useAuthStore();
+// ── Admin route guards ────────────────────────────────────────────────────────
+function AdminProtectedRoute() {
+    const { isAdminAuthenticated } = useAdminAuthStore();
+    if (!isAdminAuthenticated) return <Navigate to="/admin/login" replace />;
+    return <Outlet />;
+}
 
-    if (isAuthenticated) {
-        return <Navigate to="/dashboard" replace />;
-    }
-
+function AdminPublicRoute({ children }: { children: React.ReactNode }) {
+    const { isAdminAuthenticated } = useAdminAuthStore();
+    if (isAdminAuthenticated) return <Navigate to="/admin/dashboard" replace />;
     return <>{children}</>;
 }
 
+// ── App ───────────────────────────────────────────────────────────────────────
 function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
                 <Suspense fallback={<PageLoader />}>
                     <Routes>
-                        {/* Public routes */}
-                        <Route
-                            path="/"
-                            element={
-                                <PublicRoute>
-                                    <LandingPage />
-                                </PublicRoute>
-                            }
-                        />
-                        <Route
-                            path="/login"
-                            element={
-                                <PublicRoute>
-                                    <Login />
-                                </PublicRoute>
-                            }
-                        />
-                        <Route
-                            path="/register"
-                            element={
-                                <PublicRoute>
-                                    <Register />
-                                </PublicRoute>
-                            }
-                        />
+                        {/* ── Public user routes ── */}
+                        <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
+                        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+                        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
-                        {/* Protected routes with dashboard layout */}
+                        {/* ── Protected user routes ── */}
                         <Route element={<ProtectedRoute />}>
                             <Route element={<DashboardLayout />}>
                                 <Route path="/dashboard" element={<Dashboard />} />
                                 <Route path="/products" element={<Products />} />
-                                <Route path="/warranties" element={<Dashboard />} />
-                                <Route path="/verify" element={<Dashboard />} />
-                                <Route path="/owners" element={<Dashboard />} />
-                                <Route path="/settings" element={<Dashboard />} />
+                                <Route path="/warranties" element={<Warranties />} />
+                                <Route path="/verify" element={<Verify />} />
+                                <Route path="/analytics" element={<Analytics />} />
+                                <Route path="/owners" element={<Owners />} />
+                                <Route path="/settings" element={<Settings />} />
                             </Route>
                         </Route>
 
-                        {/* 404 redirect */}
+                        {/* ── Admin public route ── */}
+                        <Route
+                            path="/admin/login"
+                            element={<AdminPublicRoute><AdminLogin /></AdminPublicRoute>}
+                        />
+
+                        {/* ── Admin protected routes ── */}
+                        <Route path="/admin" element={<AdminProtectedRoute />}>
+                            <Route element={<AdminLayout />}>
+                                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                                <Route path="dashboard" element={<AdminDashboard />} />
+                                <Route path="products" element={<AdminProducts />} />
+                                <Route path="warranties" element={<AdminWarranties />} />
+                                <Route path="owners" element={<AdminOwners />} />
+                                <Route path="verify" element={<AdminAuthenticity />} />
+                                <Route path="settings" element={<AdminSettings />} />
+                            </Route>
+                        </Route>
+
+                        {/* ── Fallback ── */}
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </Suspense>

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { User, IUser } from '../models/User';
-import { logger } from '../utils/logger';
+import { AuthenticationError } from '../utils/errors';
 
 export interface AuthRequest extends Request {
     user?: IUser;
@@ -10,7 +10,7 @@ export interface AuthRequest extends Request {
 
 export const authMiddleware = async (
     req: AuthRequest,
-    res: Response,
+    _res: Response,
     next: NextFunction
 ): Promise<void> => {
     try {
@@ -18,54 +18,33 @@ export const authMiddleware = async (
         const authHeader = req.headers.authorization;
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            res.status(401).json({
-                success: false,
-                message: 'Access denied. No token provided.',
-            });
-            return;
+            throw new AuthenticationError('Access denied. No token provided.');
         }
 
         const token = authHeader.split(' ')[1];
 
         // Verify token
-        const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string };
+        let decoded: { userId: string };
+        try {
+            decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string };
+        } catch (jwtError: any) {
+            if (jwtError.name === 'TokenExpiredError') {
+                throw new AuthenticationError('Token expired. Please log in again.');
+            }
+            throw new AuthenticationError('Invalid token.');
+        }
 
         // Get user from database
         const user = await User.findById(decoded.userId);
 
         if (!user) {
-            res.status(401).json({
-                success: false,
-                message: 'Invalid token. User not found.',
-            });
-            return;
+            throw new AuthenticationError('Invalid token. User not found.');
         }
 
         // Attach user to request
         req.user = user;
         next();
-    } catch (error: any) {
-        logger.error('Auth middleware error:', error);
-
-        if (error.name === 'JsonWebTokenError') {
-            res.status(401).json({
-                success: false,
-                message: 'Invalid token.',
-            });
-            return;
-        }
-
-        if (error.name === 'TokenExpiredError') {
-            res.status(401).json({
-                success: false,
-                message: 'Token expired.',
-            });
-            return;
-        }
-
-        res.status(500).json({
-            success: false,
-            message: 'Server error during authentication.',
-        });
+    } catch (error) {
+        next(error);
     }
 };
