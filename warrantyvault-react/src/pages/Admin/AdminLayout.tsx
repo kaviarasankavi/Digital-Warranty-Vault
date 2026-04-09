@@ -13,6 +13,7 @@ import {
     Bell,
     BarChart3,
     Megaphone,
+    Activity,
 } from 'lucide-react';
 import { useAdminAuthStore } from '../../store/adminAuthStore';
 import { useDataStore } from '../../store/dataStore';
@@ -24,6 +25,7 @@ const navItems = [
     { path: '/admin/warranties', icon: ShieldCheck, label: 'Warranties' },
     { path: '/admin/owners', icon: Users, label: 'Owners' },
     { path: '/admin/verify', icon: ScanLine, label: 'Authenticity' },
+    { path: '/admin/audit-logs', icon: Activity, label: 'Audit Logs' },
     { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
     { path: '/admin/settings', icon: Settings, label: 'Settings' },
 ];

@@ -20,6 +20,7 @@ import {
 import { Header } from '../../components/layout/Header';
 import { productApi, type Product, type ProductFormData, type ProductQueryParams, type Pagination } from '../../api/productApi';
 import { ProductModal } from './ProductModal';
+import { ProductHistoryModal } from './ProductHistoryModal';
 import '../../styles/userDashboard.css';
 import './Products.css';
 
@@ -47,6 +48,11 @@ export default function Products() {
     const [saveError, setSaveError] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+    // ── History Modal state ──
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [historyProductId, setHistoryProductId] = useState<number | null>(null);
+    const [historyProductName, setHistoryProductName] = useState('');
 
     // ── Filter state ──
     const [search, setSearch] = useState('');
@@ -133,6 +139,12 @@ export default function Products() {
         setEditProduct(product);
         setSaveError(null);
         setModalOpen(true);
+    };
+
+    const handleViewHistory = (product: Product) => {
+        setHistoryProductId(product.id);
+        setHistoryProductName(product.name);
+        setHistoryOpen(true);
     };
 
     const handleSave = async (data: ProductFormData) => {
@@ -476,6 +488,13 @@ export default function Products() {
                                             <div className="vault-card-actions">
                                                 <button
                                                     className="vault-action-btn"
+                                                    onClick={() => handleViewHistory(product)}
+                                                    title="History"
+                                                >
+                                                    <Clock size={14} />
+                                                </button>
+                                                <button
+                                                    className="vault-action-btn"
                                                     onClick={() => handleEdit(product)}
                                                     title="Edit"
                                                 >
@@ -633,6 +652,17 @@ export default function Products() {
                     apiError={saveError}
                 />
             )}
+
+            <ProductHistoryModal 
+                isOpen={historyOpen}
+                onClose={() => {
+                    setHistoryOpen(false);
+                    setHistoryProductId(null);
+                    setHistoryProductName('');
+                }}
+                productId={historyProductId}
+                productName={historyProductName}
+            />
         </div>
     );
 }

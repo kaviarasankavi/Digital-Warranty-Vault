@@ -167,6 +167,67 @@ export const getProduct = asyncHandler(async (req: AuthRequest, res: Response): 
     res.json({ success: true, data: products[0] });
 });
 
+// GET /api/products/:id/history — Get the product audit and price history from Postgres triggers
+export const getProductHistory = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const userId = req.user?._id?.toString();
+    if (!userId) {
+        throw new AuthenticationError('Unauthorized');
+    }
+
+    const id = req.params.id as string;
+
+    if (!/^\d+$/.test(id)) {
+        throw new NotFoundError('Product');
+    }
+
+    const sql = getSQL();
+
+    // Verify ownership
+    const products = await sql`
+        SELECT id FROM products WHERE id = ${id} AND "userId" = ${userId}
+    ` as any[];
+
+    if (products.length === 0) {
+        throw new NotFoundError('Product');
+    }
+
+    // 1. Fetch from product_audit_log
+    const auditLogs = await sql`
+        SELECT 
+            'AUDIT' as event_type, 
+            action, 
+            changed_at as timestamp, 
+            old_data, 
+            new_data
+        FROM product_audit_log 
+        WHERE product_id = ${id}
+        ORDER BY changed_at DESC
+    ` as any[];
+
+    // 2. Fetch from price_change_history
+    const priceLogs = await sql`
+        SELECT 
+            'PRICE_CHANGE' as event_type, 
+            'UPDATE' as action, 
+            changed_at as timestamp, 
+            old_price, 
+            new_price
+        FROM price_change_history 
+        WHERE product_id = ${id}
+        ORDER BY changed_at DESC
+    ` as any[];
+
+    // Combine and sort (newest first)
+    const combinedHistory = [...auditLogs, ...priceLogs].sort((a, b) => {
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
+
+    res.json({
+        success: true,
+        data: combinedHistory
+    });
+});
+
 // POST /api/products — Create a new product
 export const createProduct = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
     const userId = req.user?._id?.toString();
