@@ -1,5 +1,15 @@
 import axios from 'axios';
 
+// Import auth store dynamically to avoid circular dependency issues
+let authStore: any = null;
+const getAuthStore = async () => {
+    if (!authStore) {
+        const module = await import('../store/authStore');
+        authStore = module.useAuthStore.getState();
+    }
+    return authStore;
+};
+
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
     timeout: 10000,
@@ -25,7 +35,7 @@ api.interceptors.request.use(
 // Response interceptor — structured error normalisation
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
         // ── Network / timeout errors (no response from server) ──
         if (!error.response) {
             error.friendlyMessage = error.code === 'ECONNABORTED'
@@ -46,10 +56,25 @@ api.interceptors.response.use(
 
         // ── 401 Unauthorized — clear session & redirect ──
         if (status === 401) {
+            // Clear both localStorage and auth store
             localStorage.removeItem('token');
-            // Only redirect if not already on login page
-            if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
+            
+            // Get auth store and logout properly
+            try {
+                const store = await getAuthStore();
+                store.logout();
+            } catch (e) {
+                console.error('Failed to clear auth store:', e);
+            }
+            
+            // Only redirect if not already on login or public pages
+            const currentPath = window.location.pathname;
+            const publicPaths = ['/login', '/register', '/'];
+            if (!publicPaths.some(path => currentPath.includes(path))) {
+                // Use a slight delay to ensure store updates
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 100);
             }
         }
 

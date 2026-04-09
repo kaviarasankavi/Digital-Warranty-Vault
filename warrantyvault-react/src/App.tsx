@@ -27,6 +27,7 @@ const AdminWarranties = lazy(() => import('./pages/Admin/AdminWarranties'));
 const AdminOwners = lazy(() => import('./pages/Admin/AdminOwners'));
 const AdminAuthenticity = lazy(() => import('./pages/Admin/AdminAuthenticity'));
 const AdminSettings = lazy(() => import('./pages/Admin/AdminSettings'));
+const AdminAnnouncements = lazy(() => import('./pages/Admin/AdminAnnouncements'));
 
 const queryClient = new QueryClient({
     defaultOptions: { queries: { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false } },
@@ -120,6 +121,7 @@ function App() {
                                 <Route path="warranties" element={<AdminWarranties />} />
                                 <Route path="owners" element={<AdminOwners />} />
                                 <Route path="verify" element={<AdminAuthenticity />} />
+                                <Route path="announcements" element={<AdminAnnouncements />} />
                                 <Route path="settings" element={<AdminSettings />} />
                             </Route>
                         </Route>

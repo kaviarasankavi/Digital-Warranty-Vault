@@ -11,6 +11,7 @@ import triggerRoutes from './routes/triggerRoutes';
 import procedureRoutes from './routes/procedureRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import auditLogRoutes from './routes/auditLogRoutes';
+import announcementRoutes from './routes/announcementRoutes';
 import { initMySQL } from './config/database-mysql';
 
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/triggers', triggerRoutes);
 app.use('/api/procedures', procedureRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/announcements', announcementRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────
 app.use((req, res) => {

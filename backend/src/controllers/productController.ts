@@ -7,6 +7,7 @@ import {
     AuthenticationError,
     ValidationError,
     NotFoundError,
+    ConflictError,
 } from '../utils/errors';
 import { logAuditEvent } from '../services/auditLogService';
 
@@ -185,14 +186,48 @@ export const createProduct = asyncHandler(async (req: AuthRequest, res: Response
         notes,
     } = req.body;
 
+    // ── Field Validations ──
     if (!name || !name.trim()) {
         throw new ValidationError('Product name is required.');
     }
+    if (name.trim().length < 2) {
+        throw new ValidationError('Product name must be at least 2 characters.');
+    }
+    if (!brand || !brand.trim()) {
+        throw new ValidationError('Brand is required.');
+    }
+    if (!model || !model.trim()) {
+        throw new ValidationError('Model is required.');
+    }
+    if (purchasePrice !== undefined && purchasePrice !== null && purchasePrice !== '') {
+        const price = parseFloat(purchasePrice);
+        if (isNaN(price) || price < 0) {
+            throw new ValidationError('Purchase price must be a non-negative number.');
+        }
+    }
+    if (purchaseDate && warrantyExpiry) {
+        const pd = new Date(purchaseDate);
+        const we = new Date(warrantyExpiry);
+        if (!isNaN(pd.getTime()) && !isNaN(we.getTime()) && we < pd) {
+            throw new ValidationError('Warranty expiry date cannot be before the purchase date.');
+        }
+    }
 
     const sql = getSQL();
+
+    // ── Duplicate serial number check (non-empty) ──
+    if (serialNumber && serialNumber.trim()) {
+        const duplicate = await sql`
+            SELECT id FROM products WHERE "serialNumber" = ${serialNumber.trim()} AND "userId" = ${userId}
+        ` as any[];
+        if (duplicate.length > 0) {
+            throw new ConflictError(`A product with serial number "${serialNumber.trim()}" already exists in your vault.`);
+        }
+    }
+
     const result = await sql`
         INSERT INTO products ("userId", name, brand, model, "serialNumber", category, "purchaseDate", "purchasePrice", "warrantyExpiry", notes)
-        VALUES (${userId}, ${name.trim()}, ${brand || ''}, ${model || ''}, ${serialNumber || ''}, ${category || ''}, ${purchaseDate || ''}, ${purchasePrice || 0}, ${warrantyExpiry || ''}, ${notes || ''})
+        VALUES (${userId}, ${name.trim()}, ${brand || ''}, ${model || ''}, ${serialNumber?.trim() || ''}, ${category || ''}, ${purchaseDate || null}, ${purchasePrice || 0}, ${warrantyExpiry || null}, ${notes || ''})
         RETURNING *
     ` as any[];
 
@@ -250,16 +285,50 @@ export const updateProduct = asyncHandler(async (req: AuthRequest, res: Response
         notes,
     } = req.body;
 
+    // ── Field Validations ──
     if (!name || !name.trim()) {
         throw new ValidationError('Product name is required.');
+    }
+    if (name.trim().length < 2) {
+        throw new ValidationError('Product name must be at least 2 characters.');
+    }
+    if (!brand || !brand.trim()) {
+        throw new ValidationError('Brand is required.');
+    }
+    if (!model || !model.trim()) {
+        throw new ValidationError('Model is required.');
+    }
+    if (purchasePrice !== undefined && purchasePrice !== null && purchasePrice !== '') {
+        const price = parseFloat(purchasePrice);
+        if (isNaN(price) || price < 0) {
+            throw new ValidationError('Purchase price must be a non-negative number.');
+        }
+    }
+    if (purchaseDate && warrantyExpiry) {
+        const pd = new Date(purchaseDate);
+        const we = new Date(warrantyExpiry);
+        if (!isNaN(pd.getTime()) && !isNaN(we.getTime()) && we < pd) {
+            throw new ValidationError('Warranty expiry date cannot be before the purchase date.');
+        }
+    }
+
+    // ── Duplicate serial number check (exclude current product) ──
+    if (serialNumber && serialNumber.trim()) {
+        const duplicate = await sql`
+            SELECT id FROM products
+            WHERE "serialNumber" = ${serialNumber.trim()} AND "userId" = ${userId} AND id != ${id}
+        ` as any[];
+        if (duplicate.length > 0) {
+            throw new ConflictError(`A product with serial number "${serialNumber.trim()}" already exists in your vault.`);
+        }
     }
 
     const result = await sql`
         UPDATE products
         SET name = ${name.trim()}, brand = ${brand || ''}, model = ${model || ''}, 
-            "serialNumber" = ${serialNumber || ''}, category = ${category || ''},
-            "purchaseDate" = ${purchaseDate || ''}, "purchasePrice" = ${purchasePrice || 0}, 
-            "warrantyExpiry" = ${warrantyExpiry || ''}, notes = ${notes || ''},
+            "serialNumber" = ${serialNumber?.trim() || ''}, category = ${category || ''},
+            "purchaseDate" = ${purchaseDate || null}, "purchasePrice" = ${purchasePrice || 0}, 
+            "warrantyExpiry" = ${warrantyExpiry || null}, notes = ${notes || ''},
             "updatedAt" = NOW()
         WHERE id = ${id} AND "userId" = ${userId}
         RETURNING *

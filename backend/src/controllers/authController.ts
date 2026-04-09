@@ -22,22 +22,44 @@ const generateToken = (userId: string): string => {
 export const register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { name, email, password } = req.body;
 
-    // Validate input
-    if (!name || !email || !password) {
-        throw new ValidationError('Please provide name, email, and password.');
+    // ── Validate input ──
+    if (!name || !name.trim()) {
+        throw new ValidationError('Full name is required.');
+    }
+    if (name.trim().length < 2) {
+        throw new ValidationError('Name must be at least 2 characters.');
+    }
+    if (name.trim().length > 100) {
+        throw new ValidationError('Name must not exceed 100 characters.');
+    }
+    if (!email || !email.trim()) {
+        throw new ValidationError('Email address is required.');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+        throw new ValidationError('Please provide a valid email address.');
+    }
+    if (!password) {
+        throw new ValidationError('Password is required.');
+    }
+    if (password.length < 6) {
+        throw new ValidationError('Password must be at least 6 characters.');
+    }
+    if (password.length > 100) {
+        throw new ValidationError('Password must not exceed 100 characters.');
     }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
 
     if (existingUser) {
-        throw new ConflictError('User with this email already exists.');
+        throw new ConflictError('An account with this email already exists. Please sign in instead.');
     }
 
     // Create new user (mongoose ValidationError will be caught by centralized handler)
     const user = await User.create({
-        name,
-        email: email.toLowerCase(),
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
         password,
     });
 
@@ -48,7 +70,7 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
 
     res.status(201).json({
         success: true,
-        message: 'User registered successfully.',
+        message: 'Account created successfully.',
         data: {
             user: {
                 id: user._id,
@@ -66,13 +88,16 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
 export const login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { email, password } = req.body;
 
-    // Validate input
-    if (!email || !password) {
-        throw new ValidationError('Please provide email and password.');
+    // ── Validate input ──
+    if (!email || !email.trim()) {
+        throw new ValidationError('Email address is required.');
+    }
+    if (!password) {
+        throw new ValidationError('Password is required.');
     }
 
     // Find user and include password for comparison
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
 
     if (!user) {
         throw new AuthenticationError('Invalid email or password.');

@@ -61,8 +61,26 @@ export async function initMySQL(): Promise<void> {
             )
         `);
 
+        // ── Step 4: Create the announcements table ──
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS announcements (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                message     TEXT NOT NULL,
+                link_text   VARCHAR(255) DEFAULT NULL,
+                link_url    VARCHAR(500) DEFAULT NULL,
+                bg_color    VARCHAR(50) DEFAULT '#6366f1',
+                text_color  VARCHAR(50) DEFAULT '#ffffff',
+                is_active   BOOLEAN DEFAULT TRUE,
+                priority    INT DEFAULT 0,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_is_active (is_active),
+                INDEX idx_priority (priority)
+            )
+        `);
+
         logger.info('MySQL (Audit Log) connected successfully');
-        logger.info('MySQL audit table initialized');
+        logger.info('MySQL audit & announcements tables initialized');
     } catch (error) {
         logger.error('MySQL connection failed:', error);
         throw error;

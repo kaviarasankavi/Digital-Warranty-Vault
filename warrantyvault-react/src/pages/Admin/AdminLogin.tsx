@@ -5,8 +5,8 @@ import { useAdminAuthStore } from '../../store/adminAuthStore';
 import './AdminLogin.css';
 
 const ADMIN_CREDENTIALS = {
-    email: 'vault-admin@system.com',
-    password: 'vaultadmin',
+    email: 'admin@vault.com',
+    password: 'admin123',
 };
 
 export default function AdminLogin() {
@@ -114,7 +114,7 @@ export default function AdminLogin() {
                         <div className="admin-demo-dot" />
                         <div>
                             <strong>Demo admin access</strong>
-                            <span>vault-admin@system.com · vaultadmin</span>
+                            <span>admin@vault.com · admin123</span>
                         </div>
                         <span className="admin-demo-fill">Auto-fill</span>
                     </div>

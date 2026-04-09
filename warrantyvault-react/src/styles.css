@@ -118,7 +118,7 @@ a {
    ============================================ */
 .navbar {
     position: fixed;
-    top: 0;
+    top: var(--announcement-bar-height, 0px);
     left: 0;
     right: 0;
     z-index: 1000;
@@ -300,7 +300,7 @@ a {
    Hero Section
    ============================================ */
 .hero {
-    padding: 140px 0 80px;
+    padding: calc(140px + var(--announcement-bar-height, 0px)) 0 80px;
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--gray-50) 100%);
     min-height: 100vh;
     display: flex;

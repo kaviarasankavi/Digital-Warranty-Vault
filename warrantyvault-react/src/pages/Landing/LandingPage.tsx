@@ -11,10 +11,12 @@ import FAQ from '../../components/FAQ';
 import CTA from '../../components/CTA';
 import Footer from '../../components/Footer';
 import ScrollProgress from '../../components/ScrollProgress';
+import AnnouncementBar from '../../components/AnnouncementBar/AnnouncementBar';
 
 export default function LandingPage() {
     return (
         <>
+            <AnnouncementBar />
             <ScrollProgress />
             <Navbar />
             <Hero />

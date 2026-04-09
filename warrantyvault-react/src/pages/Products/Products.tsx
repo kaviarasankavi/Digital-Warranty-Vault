@@ -44,6 +44,7 @@ export default function Products() {
     const [modalOpen, setModalOpen] = useState(false);
     const [editProduct, setEditProduct] = useState<Product | null>(null);
     const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -105,8 +106,13 @@ export default function Products() {
             const res = await productApi.getAll(params);
             setProducts(res.data);
             setPagination(res.pagination);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to fetch products:', err);
+            // Don't do anything on 401 errors - the axios interceptor will handle it
+            if (err?.response?.status !== 401) {
+                // Handle other errors gracefully
+                setProducts([]);
+            }
         } finally {
             setLoading(false);
         }
@@ -119,17 +125,20 @@ export default function Products() {
     // ── Handlers ──
     const handleCreate = () => {
         setEditProduct(null);
+        setSaveError(null);
         setModalOpen(true);
     };
 
     const handleEdit = (product: Product) => {
         setEditProduct(product);
+        setSaveError(null);
         setModalOpen(true);
     };
 
     const handleSave = async (data: ProductFormData) => {
         try {
             setSaving(true);
+            setSaveError(null);
             if (editProduct) {
                 await productApi.update(editProduct.id, data);
             } else {
@@ -140,7 +149,13 @@ export default function Products() {
             await fetchProducts();
             // Refresh categories
             productApi.getCategories().then((res) => setCategories(res.data)).catch(() => {});
-        } catch (err) {
+        } catch (err: any) {
+            // Extract the server error message and display in modal
+            const message =
+                err?.response?.data?.message ||
+                err?.message ||
+                'An unexpected error occurred. Please try again.';
+            setSaveError(message);
             console.error('Failed to save product:', err);
         } finally {
             setSaving(false);
@@ -612,8 +627,10 @@ export default function Products() {
                     onClose={() => {
                         setModalOpen(false);
                         setEditProduct(null);
+                        setSaveError(null);
                     }}
                     saving={saving}
+                    apiError={saveError}
                 />
             )}
         </div>
