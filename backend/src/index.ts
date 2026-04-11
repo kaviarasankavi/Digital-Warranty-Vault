@@ -12,6 +12,7 @@ import procedureRoutes from './routes/procedureRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import auditLogRoutes from './routes/auditLogRoutes';
 import announcementRoutes from './routes/announcementRoutes';
+import newsRoutes from './routes/newsRoutes';
 import { initMySQL } from './config/database-mysql';
 
 const app = express();
@@ -31,6 +32,8 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'WarrantyVault API is running' });
 });
 
+import userRoutes from './routes/userRoutes';
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -39,6 +42,8 @@ app.use('/api/procedures', procedureRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/news', newsRoutes);
+app.use('/api/users', userRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────
 app.use((req, res) => {

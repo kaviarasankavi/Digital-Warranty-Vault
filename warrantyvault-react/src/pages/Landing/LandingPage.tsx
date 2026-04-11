@@ -12,6 +12,7 @@ import CTA from '../../components/CTA';
 import Footer from '../../components/Footer';
 import ScrollProgress from '../../components/ScrollProgress';
 import AnnouncementBar from '../../components/AnnouncementBar/AnnouncementBar';
+import NewsSection from '../../components/NewsSection/NewsSection';
 
 export default function LandingPage() {
     return (
@@ -27,6 +28,7 @@ export default function LandingPage() {
             <Testimonials />
             <Pricing />
             <Gallery />
+            <NewsSection />
             <FAQ />
             <CTA />
             <Footer />

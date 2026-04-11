@@ -266,25 +266,7 @@ export const createProduct = asyncHandler(async (req: AuthRequest, res: Response
             throw new ValidationError('Purchase price must be a non-negative number.');
         }
     }
-    if (purchaseDate && warrantyExpiry) {
-        const pd = new Date(purchaseDate);
-        const we = new Date(warrantyExpiry);
-        if (!isNaN(pd.getTime()) && !isNaN(we.getTime()) && we < pd) {
-            throw new ValidationError('Warranty expiry date cannot be before the purchase date.');
-        }
-    }
-
     const sql = getSQL();
-
-    // ── Duplicate serial number check (non-empty) ──
-    if (serialNumber && serialNumber.trim()) {
-        const duplicate = await sql`
-            SELECT id FROM products WHERE "serialNumber" = ${serialNumber.trim()} AND "userId" = ${userId}
-        ` as any[];
-        if (duplicate.length > 0) {
-            throw new ConflictError(`A product with serial number "${serialNumber.trim()}" already exists in your vault.`);
-        }
-    }
 
     const result = await sql`
         INSERT INTO products ("userId", name, brand, model, "serialNumber", category, "purchaseDate", "purchasePrice", "warrantyExpiry", notes)
@@ -365,24 +347,7 @@ export const updateProduct = asyncHandler(async (req: AuthRequest, res: Response
             throw new ValidationError('Purchase price must be a non-negative number.');
         }
     }
-    if (purchaseDate && warrantyExpiry) {
-        const pd = new Date(purchaseDate);
-        const we = new Date(warrantyExpiry);
-        if (!isNaN(pd.getTime()) && !isNaN(we.getTime()) && we < pd) {
-            throw new ValidationError('Warranty expiry date cannot be before the purchase date.');
-        }
-    }
 
-    // ── Duplicate serial number check (exclude current product) ──
-    if (serialNumber && serialNumber.trim()) {
-        const duplicate = await sql`
-            SELECT id FROM products
-            WHERE "serialNumber" = ${serialNumber.trim()} AND "userId" = ${userId} AND id != ${id}
-        ` as any[];
-        if (duplicate.length > 0) {
-            throw new ConflictError(`A product with serial number "${serialNumber.trim()}" already exists in your vault.`);
-        }
-    }
 
     const result = await sql`
         UPDATE products

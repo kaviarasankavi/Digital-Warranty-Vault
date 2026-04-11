@@ -169,6 +169,61 @@ export async function initTriggers(sql: any): Promise<void> {
         logger.info('All PL/pgSQL trigger functions created successfully');
 
         // ============================================================
+        // TRIGGER FUNCTION 6: Validate Warranty Dates
+        // Raises an exception if warrantyExpiry < purchaseDate
+        // ============================================================
+        await sql`
+            CREATE OR REPLACE FUNCTION fn_validate_warranty_dates()
+            RETURNS TRIGGER AS $$
+            DECLARE
+                v_purchase DATE;
+                v_expiry DATE;
+            BEGIN
+                IF NEW."purchaseDate" IS NOT NULL AND TRIM(NEW."purchaseDate") <> '' AND NEW."warrantyExpiry" IS NOT NULL AND TRIM(NEW."warrantyExpiry") <> '' THEN
+                    BEGIN
+                        v_purchase := NEW."purchaseDate"::DATE;
+                        v_expiry := NEW."warrantyExpiry"::DATE;
+                    EXCEPTION WHEN OTHERS THEN
+                        -- Ignore parse errors
+                    END;
+                    
+                    IF v_purchase IS NOT NULL AND v_expiry IS NOT NULL AND v_expiry < v_purchase THEN
+                        RAISE EXCEPTION 'Warranty expiry date cannot be before the purchase date.';
+                    END IF;
+                END IF;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql
+        `;
+
+        // ============================================================
+        // TRIGGER FUNCTION 7: Prevent Duplicate Serial
+        // Raises an exception if a non-empty serialNumber is duplicated for the same user
+        // ============================================================
+        await sql`
+            CREATE OR REPLACE FUNCTION fn_prevent_duplicate_serial()
+            RETURNS TRIGGER AS $$
+            DECLARE
+                v_count INT;
+            BEGIN
+                IF NEW."serialNumber" IS NOT NULL AND TRIM(NEW."serialNumber") <> '' THEN
+                    -- Check if another product belonging to the same user has exactly the same serialNumber
+                    SELECT COUNT(*) INTO v_count
+                    FROM products
+                    WHERE "userId" = NEW."userId"
+                      AND "serialNumber" = TRIM(NEW."serialNumber")
+                      AND id IS DISTINCT FROM NEW.id;
+                      
+                    IF v_count > 0 THEN
+                        RAISE EXCEPTION 'A product with serial number "%" already exists in your vault.', TRIM(NEW."serialNumber");
+                    END IF;
+                END IF;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql
+        `;
+
+        // ============================================================
         // DROP EXISTING TRIGGERS (to avoid duplicates on restart)
         // ============================================================
         await sql`DROP TRIGGER IF EXISTS trg_product_audit ON products`;
@@ -176,6 +231,8 @@ export async function initTriggers(sql: any): Promise<void> {
         await sql`DROP TRIGGER IF EXISTS trg_warranty_status_sync ON products`;
         await sql`DROP TRIGGER IF EXISTS trg_price_change_tracker ON products`;
         await sql`DROP TRIGGER IF EXISTS trg_prevent_negative_price ON products`;
+        await sql`DROP TRIGGER IF EXISTS trg_validate_warranty_dates ON products`;
+        await sql`DROP TRIGGER IF EXISTS trg_prevent_duplicate_serial ON products`;
 
         // ============================================================
         // CREATE TRIGGERS
@@ -221,7 +278,23 @@ export async function initTriggers(sql: any): Promise<void> {
             EXECUTE FUNCTION fn_prevent_negative_price()
         `;
 
-        logger.info('All 5 PL/pgSQL triggers created successfully');
+        // Trigger 6: Validate warranty dates (BEFORE INSERT or UPDATE)
+        await sql`
+            CREATE TRIGGER trg_validate_warranty_dates
+            BEFORE INSERT OR UPDATE ON products
+            FOR EACH ROW
+            EXECUTE FUNCTION fn_validate_warranty_dates()
+        `;
+
+        // Trigger 7: Prevent duplicate serial (BEFORE INSERT or UPDATE)
+        await sql`
+            CREATE TRIGGER trg_prevent_duplicate_serial
+            BEFORE INSERT OR UPDATE ON products
+            FOR EACH ROW
+            EXECUTE FUNCTION fn_prevent_duplicate_serial()
+        `;
+
+        logger.info('All 7 PL/pgSQL triggers created successfully');
 
     } catch (error) {
         logger.error('Failed to initialize triggers:', error);

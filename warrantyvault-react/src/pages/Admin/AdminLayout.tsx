@@ -13,7 +13,9 @@ import {
     Bell,
     BarChart3,
     Megaphone,
+    Newspaper,
     Activity,
+    UserCircle,
 } from 'lucide-react';
 import { useAdminAuthStore } from '../../store/adminAuthStore';
 import { useDataStore } from '../../store/dataStore';
@@ -27,6 +29,8 @@ const navItems = [
     { path: '/admin/verify', icon: ScanLine, label: 'Authenticity' },
     { path: '/admin/audit-logs', icon: Activity, label: 'Audit Logs' },
     { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
+    { path: '/admin/news', icon: Newspaper, label: 'News Articles' },
+    { path: '/admin/users', icon: UserCircle, label: "Users' Info" },
     { path: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 

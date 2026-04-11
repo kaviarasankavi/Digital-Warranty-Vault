@@ -79,6 +79,24 @@ export async function initProcedures(sql: any): Promise<void> {
                     RAISE EXCEPTION 'Purchase price cannot be negative. Got: %', p_purchase_price;
                 END IF;
 
+                -- Validate warranty dates
+                IF p_purchase_date IS NOT NULL AND TRIM(p_purchase_date) <> '' AND p_warranty_expiry IS NOT NULL AND TRIM(p_warranty_expiry) <> '' THEN
+                    BEGIN
+                        IF p_warranty_expiry::DATE < p_purchase_date::DATE THEN
+                            RAISE EXCEPTION 'Warranty expiry date cannot be before the purchase date.';
+                        END IF;
+                    EXCEPTION WHEN OTHERS THEN
+                        -- Ignore parse errors
+                    END;
+                END IF;
+
+                -- Prevent duplicate serial
+                IF p_serial_number IS NOT NULL AND TRIM(p_serial_number) <> '' THEN
+                    IF EXISTS (SELECT 1 FROM products WHERE "userId" = p_user_id AND "serialNumber" = TRIM(p_serial_number)) THEN
+                        RAISE EXCEPTION 'A product with serial number "%" already exists in your vault.', TRIM(p_serial_number);
+                    END IF;
+                END IF;
+
                 -- Insert the product (triggers will handle audit + warranty status)
                 INSERT INTO products (
                     "userId", name, brand, model, "serialNumber",
