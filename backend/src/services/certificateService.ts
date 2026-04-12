@@ -1,32 +1,16 @@
 import PDFDocument from 'pdfkit';
 import { IWarrantyCertificate } from '../models/WarrantyCertificate';
 
-// Vendor display name map
 const VENDOR_DISPLAY: Record<string, string> = {
-    'vendor@samsung.vault':  'Samsung Electronics',
-    'vendor@dell.vault':     'Dell Technologies',
-    'vendor@jbl.vault':      'JBL (Harman International)',
-    'vendor@firebolt.vault': 'FireBolt Technologies',
-    'vendor@sony.vault':     'Sony Corporation',
-    'vendor@lg.vault':       'LG Electronics',
-    'vendor@apple.vault':    'Apple Inc.',
+    'vendor@samsung.vault':     'Samsung Electronics',
+    'vendor@dell.vault':        'Dell Technologies',
+    'vendor@jbl.vault':         'JBL (Harman International)',
+    'vendor@firebolt.vault':    'FireBolt Technologies',
+    'vendor@sony.vault':        'Sony Corporation',
+    'vendor@lg.vault':          'LG Electronics',
+    'vendor@apple.vault':       'Apple Inc.',
     'vendor@warrantyvault.com': 'WarrantyVault',
 };
-
-function hex(h: string): [number, number, number] {
-    const c = h.replace('#', '');
-    return [
-        parseInt(c.substring(0, 2), 16),
-        parseInt(c.substring(2, 4), 16),
-        parseInt(c.substring(4, 6), 16),
-    ];
-}
-
-const DARK  = '#0f172a';
-const TEAL  = '#0d9488';
-const LIGHT = '#f8fafc';
-const GOLD  = '#d97706';
-const GRAY  = '#64748b';
 
 function fmt(d: Date | string): string {
     return new Date(d).toLocaleDateString('en-IN', {
@@ -34,157 +18,121 @@ function fmt(d: Date | string): string {
     });
 }
 
+// Safe rounded rect helper (PDFKit only takes a single number radius)
+function rRect(doc: PDFKit.PDFDocument, x: number, y: number, w: number, h: number, r: number) {
+    doc.roundedRect(x, y, w, h, r);
+}
+
 export function generateCertificatePDF(cert: IWarrantyCertificate): Promise<Buffer> {
     return new Promise((resolve, reject) => {
         try {
             const doc = new PDFDocument({
-                size:    'A4',
-                margins: { top: 0, right: 0, bottom: 0, left: 0 },
+                size:   'A4',
+                margin: 0,
                 info: {
-                    Title:    `Warranty Certificate — ${cert.productName}`,
-                    Author:   'WarrantyVault',
-                    Subject:  'Product Authenticity Certificate',
-                    Keywords: 'warranty, certificate, authenticity',
+                    Title:   `Warranty Certificate — ${cert.productName}`,
+                    Author:  'WarrantyVault',
+                    Subject: 'Certificate of Authenticity',
                 },
             });
 
             const chunks: Buffer[] = [];
-            doc.on('data',  d => chunks.push(d));
+            doc.on('data',  c => chunks.push(c));
             doc.on('end',   () => resolve(Buffer.concat(chunks)));
             doc.on('error', reject);
 
             const W = doc.page.width;   // 595.28
             const H = doc.page.height;  // 841.89
 
-            // ──────────────────────────────────────────────
-            // 1. Deep navy background
-            // ──────────────────────────────────────────────
-            doc.rect(0, 0, W, H).fill(DARK);
+            /* ── 1. Navy background ─────────────────────────────────── */
+            doc.rect(0, 0, W, H).fill('#0f172a');
 
-            // ──────────────────────────────────────────────
-            // 2. Teal top accent bar
-            // ──────────────────────────────────────────────
-            doc.rect(0, 0, W, 8).fill(TEAL);
+            /* ── 2. Teal top stripe ─────────────────────────────────── */
+            doc.rect(0, 0, W, 6).fill('#0d9488');
 
-            // ──────────────────────────────────────────────
-            // 3. White certificate card (inset)
-            // ──────────────────────────────────────────────
-            const cx = 40, cy = 50, cw = W - 80, ch = H - 100;
-            doc
-                .roundedRect(cx, cy, cw, ch, 16)
-                .fill(LIGHT);
+            /* ── 3. White card ──────────────────────────────────────── */
+            const CX = 36, CY = 44, CW = W - 72, CH = H - 88;
+            rRect(doc, CX, CY, CW, CH, 14);
+            doc.fill('#f8fafc');
 
-            // ──────────────────────────────────────────────
-            // 4. Teal header strip inside card
-            // ──────────────────────────────────────────────
-            doc
-                .roundedRect(cx, cy, cw, 100, 16)
-                .fill(TEAL);
-            // cover bottom-rounding of header
-            doc.rect(cx, cy + 84, cw, 16).fill(TEAL);
+            // Gold card border
+            rRect(doc, CX, CY, CW, CH, 14);
+            doc.stroke('#d97706');
 
-            // ──────────────────────────────────────────────
-            // 5. Header text
-            // ──────────────────────────────────────────────
-            doc
-                .font('Helvetica-Bold')
-                .fontSize(11)
-                .fillColor('#ffffff')
-                .text('WARRANTYVAULT', cx + 28, cy + 22, { characterSpacing: 3 });
+            /* ── 4. Teal header inside card ─────────────────────────── */
+            // Draw header as a plain rect + rounded rect stacked
+            doc.rect(CX + 1, CY + 1, CW - 2, 90).fill('#0d9488');
+            rRect(doc, CX + 1, CY + 1, CW - 2, 90, 13);
+            doc.fill('#0d9488');
 
-            doc
-                .font('Helvetica-Bold')
-                .fontSize(22)
-                .fillColor('#ffffff')
-                .text('Certificate of Authenticity', cx + 28, cy + 45);
+            /* ── 5. Header text ─────────────────────────────────────── */
+            doc.font('Helvetica-Bold').fontSize(9).fillColor('#a7f3d0')
+               .text('WARRANTYVAULT', CX + 24, CY + 16, { characterSpacing: 3, width: 200 });
 
-            // Certificate ID (top-right)
-            doc
-                .font('Helvetica')
-                .fontSize(8)
-                .fillColor('rgba(255,255,255,0.75)')
-                .text(cert.certificateId, cx + cw - 190, cy + 22, { width: 160, align: 'right', characterSpacing: 1 });
+            doc.font('Helvetica-Bold').fontSize(20).fillColor('#ffffff')
+               .text('Certificate of Authenticity', CX + 24, CY + 34, { width: CW - 48 });
 
-            doc
-                .font('Helvetica')
-                .fontSize(8)
-                .fillColor('rgba(255,255,255,0.6)')
-                .text(`Issued: ${fmt(cert.issuedAt)}`, cx + cw - 190, cy + 36, { width: 160, align: 'right' });
+            /* ── 6. Certificate ID badge (top-right) ─────────────────── */
+            doc.font('Helvetica').fontSize(7).fillColor('rgba(255,255,255,0.65)')
+               .text(cert.certificateId, CX + CW - 195, CY + 16, { width: 170, align: 'right', characterSpacing: 1 });
+            doc.font('Helvetica').fontSize(7).fillColor('rgba(255,255,255,0.5)')
+               .text(`Issued: ${fmt(cert.issuedAt)}`, CX + CW - 195, CY + 28, { width: 170, align: 'right' });
 
-            // ──────────────────────────────────────────────
-            // 6. Verified badge (shield-like circle)
-            // ──────────────────────────────────────────────
-            const badgeX = cx + cw - 80, badgeY = cy + 65;
-            doc.circle(badgeX, badgeY, 28).fill('#fff');
-            doc.circle(badgeX, badgeY, 24).fill(TEAL);
-            // Checkmark (simple text approach)
-            doc
-                .font('Helvetica-Bold')
-                .fontSize(22)
-                .fillColor('#fff')
-                .text('✓', badgeX - 9, badgeY - 13);
+            /* ── 7. Green checkmark badge ───────────────────────────── */
+            const bx = CX + CW - 55, by = CY + 55;
+            doc.circle(bx, by, 25).fill('#ffffff');
+            doc.circle(bx, by, 21).fill('#059669');
+            doc.font('Helvetica-Bold').fontSize(18).fillColor('#ffffff')
+               .text('✓', bx - 9, by - 12, { width: 20 });
 
-            // ──────────────────────────────────────────────
-            // 7. "This certifies that..." intro
-            // ──────────────────────────────────────────────
-            doc
-                .font('Helvetica')
-                .fontSize(11)
-                .fillColor(GRAY)
-                .text(
-                    'This certificate confirms that the product described below has been verified as genuine and authentic by the authorized brand vendor.',
-                    cx + 28, cy + 120, { width: cw - 56, align: 'center' }
-                );
+            /* ── 8. Intro line ──────────────────────────────────────── */
+            const bodyTop = CY + 105;
+            doc.font('Helvetica').fontSize(9.5).fillColor('#475569')
+               .text(
+                   'This certificate confirms that the product below has been verified as genuine and authentic by the authorized brand vendor.',
+                   CX + 24, bodyTop,
+                   { width: CW - 48, align: 'center' }
+               );
 
-            // Divider line
-            doc
-                .moveTo(cx + 28, cy + 160)
-                .lineTo(cx + cw - 28, cy + 160)
-                .strokeColor('#e2e8f0')
-                .lineWidth(1)
-                .stroke();
+            // Divider
+            let y = bodyTop + 36;
+            doc.moveTo(CX + 24, y).lineTo(CX + CW - 24, y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+            y += 12;
 
-            // ──────────────────────────────────────────────
-            // 8. Product section
-            // ──────────────────────────────────────────────
-            const sectionY = cy + 175;
-            doc
-                .font('Helvetica-Bold')
-                .fontSize(9)
-                .fillColor(TEAL)
-                .text('PRODUCT DETAILS', cx + 28, sectionY, { characterSpacing: 2 });
+            /* ── 9. Product details ─────────────────────────────────── */
+            doc.font('Helvetica-Bold').fontSize(8).fillColor('#0d9488')
+               .text('PRODUCT DETAILS', CX + 24, y, { characterSpacing: 2 });
+            y += 16;
 
-            const detailRows: [string, string][] = [
+            const rows: [string, string][] = [
                 ['Product Name',  cert.productName],
                 ['Brand',         cert.brand.toUpperCase()],
-                ['Model',         cert.model || '—'],
+                ['Model',         cert.model  || '—'],
                 ['Serial Number', cert.serialNumber || '—'],
             ];
 
-            let rowY = sectionY + 18;
-            const col1 = cx + 28, col2 = cx + 200;
-
-            for (const [label, value] of detailRows) {
-                // Row background alternating
-                if (detailRows.indexOf([label, value]) % 2 === 0) {
-                    doc.rect(cx + 20, rowY - 4, cw - 40, 22).fill('#f1f5f9');
+            for (let i = 0; i < rows.length; i++) {
+                const [lbl, val] = rows[i];
+                if (i % 2 === 0) {
+                    doc.rect(CX + 16, y - 3, CW - 32, 18).fill('#f1f5f9');
                 }
-                doc.font('Helvetica').fontSize(9).fillColor(GRAY)
-                    .text(label, col1, rowY, { width: 165 });
-                doc.font('Helvetica-Bold').fontSize(9).fillColor(DARK)
-                    .text(value, col2, rowY, { width: cw - col2 + cx - 28 });
-                rowY += 22;
+                doc.font('Helvetica').fontSize(8.5).fillColor('#64748b')
+                   .text(lbl, CX + 24, y, { width: 140 });
+                doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#1e293b')
+                   .text(val, CX + 170, y, { width: CW - 194 });
+                y += 18;
             }
 
-            // ──────────────────────────────────────────────
-            // 9. Verification section
-            // ──────────────────────────────────────────────
-            const vSectionY = rowY + 20;
-            doc.moveTo(cx + 28, vSectionY).lineTo(cx + cw - 28, vSectionY).strokeColor('#e2e8f0').lineWidth(1).stroke();
+            y += 12;
 
-            doc
-                .font('Helvetica-Bold').fontSize(9).fillColor(TEAL)
-                .text('VERIFICATION DETAILS', cx + 28, vSectionY + 14, { characterSpacing: 2 });
+            // Divider
+            doc.moveTo(CX + 24, y).lineTo(CX + CW - 24, y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+            y += 12;
+
+            /* ── 10. Verification details ───────────────────────────── */
+            doc.font('Helvetica-Bold').fontSize(8).fillColor('#0d9488')
+               .text('VERIFICATION DETAILS', CX + 24, y, { characterSpacing: 2 });
+            y += 16;
 
             const vendorDisplay = VENDOR_DISPLAY[cert.vendorEmail] ?? cert.brand;
             const vRows: [string, string][] = [
@@ -195,69 +143,70 @@ export function generateCertificatePDF(cert: IWarrantyCertificate): Promise<Buff
                 ['Owner',              `${cert.userName} (${cert.userEmail})`],
             ];
 
-            let vRowY = vSectionY + 32;
-            for (const [label, value] of vRows) {
-                doc.font('Helvetica').fontSize(9).fillColor(GRAY).text(label, col1, vRowY, { width: 165 });
-                doc.font('Helvetica-Bold').fontSize(9).fillColor(DARK).text(value, col2, vRowY, { width: cw - col2 + cx - 28 });
-                vRowY += 20;
+            for (let i = 0; i < vRows.length; i++) {
+                const [lbl, val] = vRows[i];
+                if (i % 2 === 0) {
+                    doc.rect(CX + 16, y - 3, CW - 32, 18).fill('#f1f5f9');
+                }
+                doc.font('Helvetica').fontSize(8.5).fillColor('#64748b')
+                   .text(lbl, CX + 24, y, { width: 140 });
+                doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#1e293b')
+                   .text(val, CX + 170, y, { width: CW - 194 });
+                y += 18;
             }
 
-            // Vendor note (if any)
+            // Vendor note
             if (cert.vendorNote) {
-                doc.rect(cx + 20, vRowY + 4, cw - 40, 34).fill('#f0fdf4').stroke('#bbf7d0');
-                doc.font('Helvetica').fontSize(9).fillColor('#166534')
-                    .text(`Vendor Note: "${cert.vendorNote}"`, cx + 28, vRowY + 12, { width: cw - 56 });
-                vRowY += 46;
+                y += 6;
+                rRect(doc, CX + 16, y, CW - 32, 30, 6);
+                doc.fill('#f0fdf4');
+                doc.font('Helvetica').fontSize(8.5).fillColor('#166534')
+                   .text(`Vendor Note: "${cert.vendorNote}"`, CX + 24, y + 8, { width: CW - 48 });
+                y += 38;
+            } else {
+                y += 10;
             }
 
-            // ──────────────────────────────────────────────
-            // 10. Status seal
-            // ──────────────────────────────────────────────
-            const sealY = vRowY + 24;
-            doc.rect(cx + 28, sealY, cw - 56, 48)
-                .fill('#f0fdf4')
-                .roundedRect(cx + 28, sealY, cw - 56, 48, 8).fill('#f0fdf4');
+            /* ── 11. VERIFIED AUTHENTIC seal ───────────────────────── */
+            rRect(doc, CX + 16, y, CW - 32, 44, 8);
+            doc.fill('#f0fdf4');
+            doc.font('Helvetica-Bold').fontSize(15).fillColor('#15803d')
+               .text('✓   VERIFIED & AUTHENTIC', CX + 16, y + 8, { width: CW - 32, align: 'center' });
+            doc.font('Helvetica').fontSize(8).fillColor('#166534')
+               .text('This product has passed authenticity verification by the authorized brand vendor.', CX + 16, y + 28, { width: CW - 32, align: 'center' });
+            y += 56;
 
-            doc.font('Helvetica-Bold').fontSize(14).fillColor('#15803d')
-                .text('✓  VERIFIED & AUTHENTIC', cx + 28, sealY + 10, { width: cw - 56, align: 'center' });
-            doc.font('Helvetica').fontSize(9).fillColor('#166534')
-                .text('This product has passed authenticity verification by the authorized brand vendor.', cx + 28, sealY + 28, { width: cw - 56, align: 'center' });
+            /* ── 12. Vendor stamp (right) ────────────────────────────── */
+            const stampW = 170, stampH = 64;
+            const stampX = CX + CW - stampW - 16;
+            const stampY = y + 10;
+            rRect(doc, stampX, stampY, stampW, stampH, 8);
+            doc.stroke('#0d9488');
+            doc.moveTo(stampX, stampY + 26).lineTo(stampX + stampW, stampY + 26)
+               .strokeColor('#e2e8f0').lineWidth(1).stroke();
+            doc.font('Helvetica-Bold').fontSize(7).fillColor('#0d9488')
+               .text('AUTHORIZED VENDOR STAMP', stampX, stampY + 8, { width: stampW, align: 'center', characterSpacing: 1 });
+            doc.font('Helvetica-Bold').fontSize(10).fillColor('#1e293b')
+               .text(vendorDisplay, stampX, stampY + 32, { width: stampW, align: 'center' });
+            doc.font('Helvetica').fontSize(7.5).fillColor('#64748b')
+               .text(cert.vendorEmail, stampX, stampY + 46, { width: stampW, align: 'center' });
 
-            // ──────────────────────────────────────────────
-            // 11. Vendor stamp (bottom right)
-            // ──────────────────────────────────────────────
-            const stampY = sealY + 70;
-            const stampX = cx + cw - 200;
+            // Signature line (left)
+            const sigY = stampY + 50;
+            doc.moveTo(CX + 24, sigY).lineTo(CX + 150, sigY)
+               .strokeColor('#94a3b8').lineWidth(1).stroke();
+            doc.font('Helvetica').fontSize(7.5).fillColor('#94a3b8')
+               .text('Authorized Signature', CX + 24, sigY + 4);
 
-            doc.rect(stampX, stampY, 168, 68).fill('#fff').roundedRect(stampX, stampY, 168, 68, 10).stroke(TEAL);
-            doc.moveTo(stampX, stampY + 28).lineTo(stampX + 168, stampY + 28).strokeColor('#e2e8f0').lineWidth(1).stroke();
-
-            doc.font('Helvetica-Bold').fontSize(8).fillColor(TEAL)
-                .text('AUTHORIZED VENDOR STAMP', stampX, stampY + 8, { width: 168, align: 'center', characterSpacing: 1 });
-
-            doc.font('Helvetica-Bold').fontSize(10).fillColor(DARK)
-                .text(vendorDisplay, stampX, stampY + 34, { width: 168, align: 'center' });
-            doc.font('Helvetica').fontSize(8).fillColor(GRAY)
-                .text(cert.vendorEmail, stampX, stampY + 48, { width: 168, align: 'center' });
-
-            // User signature line (bottom left)
-            const sigX = cx + 28;
-            const sigY = stampY + 48;
-            doc.moveTo(sigX, sigY).lineTo(sigX + 120, sigY).strokeColor('#94a3b8').lineWidth(1).stroke();
-            doc.font('Helvetica').fontSize(8).fillColor(GRAY).text('Authorized Signature', sigX, sigY + 4);
-
-            // ──────────────────────────────────────────────
-            // 12. Footer bar
-            // ──────────────────────────────────────────────
-            const footerY = cy + ch - 32;
-            doc.rect(cx, footerY, cw, 32).fill(TEAL).roundedRect(cx, footerY, cw, 32, { lowerRight: 16, lowerLeft: 16 }).fill(TEAL);
-            doc.rect(cx, footerY, cw, 8).fill(TEAL);  // cover top rounding of bottom rect
-
-            doc.font('Helvetica').fontSize(8).fillColor('rgba(255,255,255,0.7)')
-                .text('This is a digitally generated certificate. Verify authenticity at warrantyvault.com', cx, footerY + 11, { width: cw, align: 'center' });
-
-            // Outer card border (gold)
-            doc.roundedRect(cx, cy, cw, ch, 16).stroke(GOLD);
+            /* ── 13. Footer bar ─────────────────────────────────────── */
+            const footerY = CY + CH - 28;
+            doc.rect(CX + 1, footerY, CW - 2, 27).fill('#0d9488');
+            doc.font('Helvetica').fontSize(7.5).fillColor('rgba(255,255,255,0.65)')
+               .text(
+                   'Digitally generated by WarrantyVault  ·  Verify authenticity at warrantyvault.com',
+                   CX + 24, footerY + 9,
+                   { width: CW - 48, align: 'center' }
+               );
 
             doc.end();
         } catch (err) {
