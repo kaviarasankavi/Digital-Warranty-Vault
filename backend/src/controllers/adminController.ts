@@ -190,3 +190,63 @@ export const getPlatformAnalytics = asyncHandler(
         });
     }
 );
+
+// ── GET /api/admin/verifications ─────────────────────────────────────────────
+// Full verification audit log — all requests across all users and vendors
+export const getVerificationLog = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+        const {
+            status,
+            search,
+            page  = '1',
+            limit = '25',
+        } = req.query as Record<string, string | undefined>;
+
+        const pageNum  = Math.max(1, parseInt(page  || '1',  10));
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit || '25', 10)));
+        const skip     = (pageNum - 1) * limitNum;
+
+        // Build query
+        const query: any = {};
+        if (status && status !== 'all') query.status = status;
+        if (search && search.trim()) {
+            const re = new RegExp(search.trim(), 'i');
+            query.$or = [
+                { userName:    re },
+                { userEmail:   re },
+                { productName: re },
+                { brand:       re },
+                { vendorEmail: re },
+            ];
+        }
+
+        const [total, docs] = await Promise.all([
+            VerificationRequest.countDocuments(query),
+            VerificationRequest.find(query)
+                .sort({ requestedAt: -1 })
+                .skip(skip)
+                .limit(limitNum)
+                .lean(),
+        ]);
+
+        // Summary counts (always global, not filtered)
+        const [pending, verified, rejected] = await Promise.all([
+            VerificationRequest.countDocuments({ status: 'pending'  }),
+            VerificationRequest.countDocuments({ status: 'verified' }),
+            VerificationRequest.countDocuments({ status: 'rejected' }),
+        ]);
+
+        res.json({
+            success: true,
+            data: docs,
+            summary: { total: pending + verified + rejected, pending, verified, rejected },
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                totalCount: total,
+                totalPages: Math.ceil(total / limitNum),
+            },
+        });
+    }
+);
+

@@ -21,10 +21,6 @@ const LandingPage = lazy(() => import('./pages/Landing'));
 // ── Admin pages (lazy) ────────────────────────────────────────────────────────
 const AdminLogin = lazy(() => import('./pages/Admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./pages/Admin/AdminLayout'));
-const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
-const AdminProducts = lazy(() => import('./pages/Admin/AdminProducts'));
-const AdminWarranties = lazy(() => import('./pages/Admin/AdminWarranties'));
-const AdminOwners = lazy(() => import('./pages/Admin/AdminOwners'));
 const AdminAuthenticity = lazy(() => import('./pages/Admin/AdminAuthenticity'));
 const AdminSettings = lazy(() => import('./pages/Admin/AdminSettings'));
 const AdminAnnouncements = lazy(() => import('./pages/Admin/AdminAnnouncements'));
@@ -135,11 +131,7 @@ function App() {
                         {/* ── Admin protected routes ── */}
                         <Route path="/admin" element={<AdminProtectedRoute />}>
                             <Route element={<AdminLayout />}>
-                                <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                                <Route path="dashboard" element={<AdminDashboard />} />
-                                <Route path="products" element={<AdminProducts />} />
-                                <Route path="warranties" element={<AdminWarranties />} />
-                                <Route path="owners" element={<AdminOwners />} />
+                                <Route index element={<Navigate to="/admin/analytics" replace />} />
                                 <Route path="verify" element={<AdminAuthenticity />} />
                                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                                 <Route path="announcements" element={<AdminAnnouncements />} />

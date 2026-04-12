@@ -22,10 +22,6 @@ import { useDataStore } from '../../store/dataStore';
 import './AdminLayout.css';
 
 const navItems = [
-    { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/admin/products', icon: Package, label: 'Products' },
-    { path: '/admin/warranties', icon: ShieldCheck, label: 'Warranties' },
-    { path: '/admin/owners', icon: Users, label: 'Owners' },
     { path: '/admin/verify', icon: ScanLine, label: 'Authenticity' },
     { path: '/admin/audit-logs', icon: Activity, label: 'Audit Logs' },
     { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
@@ -139,19 +135,6 @@ export default function AdminLayout() {
                         </div>
                     </div>
                     <div className="admin-topbar-right">
-                        {expiring > 0 && (
-                            <div className="admin-alert-chip">
-                                <Bell size={13} />
-                                {expiring} warranty expiring
-                            </div>
-                        )}
-                        <div className="admin-topbar-stats">
-                            <BarChart3 size={14} />
-                            <span>{products.length} products · {owners.length} owners</span>
-                        </div>
-                        <a href="/dashboard" className="admin-view-site-btn" target="_blank" rel="noreferrer">
-                            View Site ↗
-                        </a>
                     </div>
                 </header>
 

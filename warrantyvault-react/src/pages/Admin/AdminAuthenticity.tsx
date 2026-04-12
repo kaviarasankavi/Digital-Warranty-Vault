@@ -1,145 +1,169 @@
 import { useState } from 'react';
-import { useDataStore } from '../../store/dataStore';
-import { CheckCircle, XCircle, Plus, Search, X, Save } from 'lucide-react';
-import '../Admin/AdminProducts.css';
+import { useQuery } from '@tanstack/react-query';
+import { Search, BadgeCheck, Loader2, PlayCircle, Plus, CheckCircle, XCircle, Clock } from 'lucide-react';
+import api from '../../api/axios';
+import './AdminAuthenticity.css';
+
+interface VerificationRecord {
+    _id: string;
+    productName: string;
+    brand: string;
+    serialNumber: string;
+    userId: string;
+    userName: string;
+    userEmail: string;
+    vendorEmail: string;
+    status: 'pending' | 'verified' | 'rejected';
+    requestedAt: string;
+    verifiedAt: string | null;
+}
+
+const fmtDate = (d: string) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + 
+           ' ' + new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+};
 
 export default function AdminAuthenticity() {
-    const { verificationChecks, addVerificationCheck } = useDataStore();
     const [search, setSearch] = useState('');
-    const [showAdd, setShowAdd] = useState(false);
-    const [newCheck, setNewCheck] = useState({ productName: '', vendor: '', serialHash: '', result: true });
+    const [status, setStatus] = useState('all');
+    const [page, setPage] = useState(1);
+    const limit = 25;
 
-    const filtered = verificationChecks.filter((c) =>
-        c.productName.toLowerCase().includes(search.toLowerCase()) ||
-        c.id.toLowerCase().includes(search.toLowerCase())
-    );
+    const { data, isLoading, isError, refetch } = useQuery({
+        queryKey: ['admin-verifications', page, limit, search, status],
+        queryFn: async () => {
+            const params = new URLSearchParams({
+                page: String(page),
+                limit: String(limit),
+                search,
+                status
+            });
+            const res = await api.get(`/admin/verifications?${params}`);
+            return res.data;
+        }
+    });
 
-    const handleAdd = () => {
-        if (!newCheck.productName || !newCheck.serialHash) return;
-        addVerificationCheck({
-            id: `CHK-${String(verificationChecks.length + 1).padStart(4, '0')}`,
-            serialHash: newCheck.serialHash,
-            productName: newCheck.productName,
-            vendor: newCheck.vendor,
-            result: newCheck.result,
-            checkedAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase() + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-            ownerName: '—',
-            ipAddress: '127.0.0.1',
-        });
-        setShowAdd(false);
-        setNewCheck({ productName: '', vendor: '', serialHash: '', result: true });
-    };
-
-    const total = verificationChecks.length;
-    const authentic = verificationChecks.filter((c) => c.result).length;
-    const flagged = total - authentic;
+    const records: VerificationRecord[] = data?.data || [];
+    const summary = data?.summary || { total: 0, pending: 0, verified: 0, rejected: 0 };
+    const pagination = data?.pagination;
 
     return (
-        <div style={{ color: '#fff' }}>
-            <div className="admin-page-header">
+        <div className="aauth-page">
+            <div className="aauth-header">
                 <div>
-                    <h1 className="admin-page-title">Authenticity Log</h1>
-                    <p className="admin-page-sub">Full audit trail of all serial verification checks</p>
-                </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <div className="admin-search-box">
-                        <Search size={15} />
-                        <input type="text" placeholder="Search checks..." value={search} onChange={(e) => setSearch(e.target.value)} className="admin-search-input" />
-                    </div>
-                    <button className="admin-btn-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> Log Check</button>
+                    <h1 className="aauth-title">Authenticity <span className="aauth-accent">Log</span></h1>
+                    <p className="aauth-sub">Full audit trail of all serial verification checks across all vendors</p>
                 </div>
             </div>
 
             {/* Stats row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-                {[
-                    { label: 'Total Checks', value: total, color: '#818cf8' },
-                    { label: 'Authentic', value: authentic, color: '#4ade80' },
-                    { label: 'Flagged', value: flagged, color: '#f87171' },
-                ].map((s) => (
-                    <div key={s.label} style={{ background: '#15152a', borderRadius: '1rem', padding: '1.25rem 1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <div style={{ fontSize: '2rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px', fontWeight: 600 }}>{s.label}</div>
-                    </div>
-                ))}
+            <div className="aauth-summary">
+                <div className="aauth-card aauth-card-indigo">
+                    <div className="aauth-card-val">{isLoading ? '—' : summary.total}</div>
+                    <div className="aauth-card-label">Total Requests</div>
+                </div>
+                <div className="aauth-card aauth-card-teal">
+                    <div className="aauth-card-val">{isLoading ? '—' : summary.verified}</div>
+                    <div className="aauth-card-label">Verified Authentic</div>
+                </div>
+                <div className="aauth-card aauth-card-amber">
+                    <div className="aauth-card-val">{isLoading ? '—' : summary.pending}</div>
+                    <div className="aauth-card-label">Pending Review</div>
+                </div>
+                <div className="aauth-card aauth-card-coral">
+                    <div className="aauth-card-val">{isLoading ? '—' : summary.rejected}</div>
+                    <div className="aauth-card-label">Rejected / Flagged</div>
+                </div>
             </div>
 
-            {showAdd && (
-                <div className="admin-modal-overlay" onClick={() => setShowAdd(false)}>
-                    <div className="admin-modal admin-modal-sm" onClick={(e) => e.stopPropagation()}>
-                        <div className="admin-modal-header">
-                            <h3>Log Verification Check</h3>
-                            <button className="admin-modal-close" onClick={() => setShowAdd(false)}><X size={18} /></button>
-                        </div>
-                        <div className="admin-modal-body">
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <div className="admin-form-field">
-                                    <label>Product Name *</label>
-                                    <input className="admin-input" value={newCheck.productName} onChange={(e) => setNewCheck((f) => ({ ...f, productName: e.target.value }))} />
-                                </div>
-                                <div className="admin-form-field">
-                                    <label>Vendor</label>
-                                    <input className="admin-input" value={newCheck.vendor} onChange={(e) => setNewCheck((f) => ({ ...f, vendor: e.target.value }))} />
-                                </div>
-                                <div className="admin-form-field">
-                                    <label>Serial Hash *</label>
-                                    <input className="admin-input" value={newCheck.serialHash} onChange={(e) => setNewCheck((f) => ({ ...f, serialHash: e.target.value }))} />
-                                </div>
-                                <div className="admin-form-field">
-                                    <label>Result</label>
-                                    <select className="admin-input admin-select" value={newCheck.result ? 'true' : 'false'} onChange={(e) => setNewCheck((f) => ({ ...f, result: e.target.value === 'true' }))}>
-                                        <option value="true">✓ Authentic</option>
-                                        <option value="false">✗ Flagged</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="admin-modal-footer">
-                            <button className="admin-btn-secondary" onClick={() => setShowAdd(false)}>Cancel</button>
-                            <button className="admin-btn-primary" onClick={handleAdd}><Save size={15} /> Log Check</button>
-                        </div>
-                    </div>
+            {/* Filters */}
+            <div className="aauth-filters">
+                <div className="aauth-search">
+                    <Search size={14} />
+                    <input 
+                        type="text" 
+                        placeholder="Search by product, user, brand or vendor..." 
+                        value={search} 
+                        onChange={(e) => { setSearch(e.target.value); setPage(1); }} 
+                    />
                 </div>
-            )}
+                <select className="aauth-select" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+                    <option value="all">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="verified">Verified</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
 
-            <div className="admin-card">
-                <div className="admin-table-wrap">
-                    <table className="admin-table">
+            {/* Table */}
+            {isError ? (
+                <div className="aauth-error">Failed to load verification logs.</div>
+            ) : isLoading ? (
+                <div className="aauth-loading"><Loader2 size={32} className="aauth-spinner" /></div>
+            ) : (
+                <div className="aauth-table-wrap">
+                    <table className="aauth-table">
                         <thead>
                             <tr>
-                                <th>Check ID</th>
                                 <th>Product</th>
-                                <th>Serial Hash</th>
-                                <th>Owner</th>
-                                <th>IP Address</th>
-                                <th>Checked At</th>
-                                <th>Result</th>
+                                <th>Brand / Serial</th>
+                                <th>User</th>
+                                <th>Vendor</th>
+                                <th>Requested At</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.map((c) => (
-                                <tr key={c.id}>
-                                    <td className="admin-mono">{c.id}</td>
-                                    <td style={{ color: '#fff', fontWeight: 600 }}>{c.productName}</td>
-                                    <td className="admin-mono">{c.serialHash}</td>
-                                    <td>{c.ownerName}</td>
-                                    <td className="admin-mono">{c.ipAddress}</td>
-                                    <td className="admin-mono">{c.checkedAt}</td>
-                                    <td>
-                                        {c.result
-                                            ? <span className="abadge abadge-green"><CheckCircle size={10} /> Authentic</span>
-                                            : <span className="abadge abadge-red"><XCircle size={10} /> Flagged</span>
-                                        }
-                                    </td>
+                            {records.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="aauth-empty">No verification records found.</td>
                                 </tr>
-                            ))}
-                            {filtered.length === 0 && (
-                                <tr><td colSpan={7} style={{ textAlign: 'center', color: 'rgba(255,255,255,0.2)', padding: '2rem' }}>No checks found.</td></tr>
+                            ) : (
+                                records.map((r) => (
+                                    <tr key={r._id}>
+                                        <td>
+                                            <div style={{ fontWeight: 600, color: '#fff' }}>{r.productName}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>ID: {r._id.slice(-6).toUpperCase()}</div>
+                                        </td>
+                                        <td>
+                                            <div style={{ color: '#fff' }}>{r.brand}</div>
+                                            <div className="aauth-mono" style={{ fontSize: '0.75rem', marginTop: 2 }}>{r.serialNumber || '—'}</div>
+                                        </td>
+                                        <td>
+                                            <div style={{ color: '#fff' }}>{r.userName}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{r.userEmail}</div>
+                                        </td>
+                                        <td style={{ color: 'rgba(255,255,255,0.6)' }}>{r.vendorEmail}</td>
+                                        <td>
+                                            {fmtDate(r.requestedAt)}
+                                            {r.verifiedAt && <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Updated: {fmtDate(r.verifiedAt)}</div>}
+                                        </td>
+                                        <td>
+                                            {r.status === 'verified' && <span className="aauth-badge aauth-badge-green"><CheckCircle size={10}/> Verified</span>}
+                                            {r.status === 'pending' && <span className="aauth-badge aauth-badge-amber"><Clock size={10}/> Pending</span>}
+                                            {r.status === 'rejected' && <span className="aauth-badge aauth-badge-red"><XCircle size={10}/> Rejected</span>}
+                                        </td>
+                                    </tr>
+                                ))
                             )}
                         </tbody>
                     </table>
+
+                    {/* Pagination */}
+                    {pagination && pagination.totalPages > 1 && (
+                        <div className="aauth-pagination">
+                            <span className="aauth-page-info">
+                                Page {pagination.page} of {pagination.totalPages} · {pagination.totalCount} records
+                            </span>
+                            <div className="aauth-page-btns">
+                                <button className="aauth-page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
+                                <button className="aauth-page-btn" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </div>
+            )}
         </div>
     );
 }
