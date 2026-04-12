@@ -13,6 +13,7 @@ import {
     Bell,
     ChevronRight,
     CalendarPlus,
+    Wrench,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../store/authStore';
@@ -24,6 +25,7 @@ const navItems = [
     { path: '/products',           icon: Archive,         label: 'My Vault'          },
     { path: '/verify',             icon: ScanLine,        label: 'Verify'            },
     { path: '/warranty-extension', icon: CalendarPlus,    label: 'Extend Warranty'   },
+    { path: '/warranty-claims',    icon: Wrench,          label: 'Repair Claims'     },
     { path: '/analytics',          icon: BarChart3,       label: 'Analytics'         },
     { path: '/owners',             icon: Users,           label: 'Ownership'         },
     { path: '/settings',           icon: Settings,        label: 'Settings'          },
@@ -88,7 +90,7 @@ export function Sidebar() {
                 <div className="user-nav-section">
                     <span className="user-nav-label">Main Menu</span>
                     <ul className="user-nav-list">
-                        {navItems.slice(0, 5).map((item) => (
+                        {navItems.slice(0, 6).map((item) => (
                             <li key={item.path}>
                                 <NavLink
                                     to={item.path}

@@ -16,10 +16,12 @@ import {
     User,
     BadgeCheck,
     CalendarPlus,
+    Wrench,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { verificationApi } from '../../api/verificationApi';
 import { warrantyExtensionApi } from '../../api/warrantyExtensionApi';
+import { warrantyClaimApi } from '../../api/warrantyClaimApi';
 import './VendorLayout.css';
 
 const navItems = [
@@ -30,6 +32,7 @@ const navItems = [
     { path: '/vendor/catalog',     icon: Tag,             label: 'Catalog' },
     { path: '/vendor/verify',      icon: BadgeCheck,      label: 'Verify Requests',  badge: 'verify'     },
     { path: '/vendor/extensions',  icon: CalendarPlus,    label: 'Extensions',       badge: 'extension'  },
+    { path: '/vendor/claims',      icon: Wrench,          label: 'Repair Claims',    badge: 'claims'     },
     { path: '/vendor/analytics',   icon: BarChart3,       label: 'Analytics' },
     { path: '/vendor/support',    icon: MessageSquare,   label: 'Support' },
     { path: '/vendor/settings',   icon: Settings,        label: 'Settings' },
@@ -49,6 +52,7 @@ export default function VendorLayout() {
     const [notifOpen,        setNotifOpen]        = useState(false);
     const [pendingCount,     setPendingCount]     = useState(0);
     const [extPendingCount,  setExtPendingCount]  = useState(0);
+    const [claimCount,       setClaimCount]       = useState(0);
 
     // Poll pending counts every 30 s
     useEffect(() => {
@@ -57,6 +61,8 @@ export default function VendorLayout() {
                 .then(n => setPendingCount(n)).catch(() => {});
             warrantyExtensionApi.getVendorPendingCount()
                 .then(n => setExtPendingCount(n)).catch(() => {});
+            warrantyClaimApi.getVendorCount()
+                .then(n => setClaimCount(n)).catch(() => {});
         };
         fetchCounts();
         const id = setInterval(fetchCounts, 30000);
@@ -89,7 +95,8 @@ export default function VendorLayout() {
                         {navItems.map(({ path, icon: Icon, label, badge }) => {
                             const badgeCount =
                                 badge === 'verify'    ? pendingCount :
-                                badge === 'extension' ? extPendingCount : 0;
+                                badge === 'extension' ? extPendingCount :
+                                badge === 'claims'    ? claimCount : 0;
                             return (
                                 <NavLink
                                     key={path}

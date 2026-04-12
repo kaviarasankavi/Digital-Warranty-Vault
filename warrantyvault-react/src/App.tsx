@@ -38,7 +38,9 @@ const VendorDashboard = lazy(() => import('./pages/Vendor/VendorDashboard'));
 const VendorProducts    = lazy(() => import('./pages/Vendor/VendorProducts'));
 const VendorVerify      = lazy(() => import('./pages/Vendor/VendorVerify'));
 const VendorExtensions  = lazy(() => import('./pages/Vendor/VendorExtensions'));
+const VendorClaims      = lazy(() => import('./pages/Vendor/VendorClaims'));
 const WarrantyExtension = lazy(() => import('./pages/WarrantyExtension/WarrantyExtension'));
+const WarrantyClaims    = lazy(() => import('./pages/WarrantyClaims/WarrantyClaims'));
 
 const queryClient = new QueryClient({
     defaultOptions: { queries: { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false } },
@@ -115,6 +117,7 @@ function App() {
                                 <Route path="/owners"             element={<Owners />} />
                                 <Route path="/settings"           element={<Settings />} />
                                 <Route path="/warranty-extension" element={<WarrantyExtension />} />
+                                <Route path="/warranty-claims"    element={<WarrantyClaims />} />
                             </Route>
                         </Route>
 
@@ -149,6 +152,7 @@ function App() {
                                 <Route path="/vendor/products"    element={<VendorProducts />} />
                                 <Route path="/vendor/verify"      element={<VendorVerify />} />
                                 <Route path="/vendor/extensions"  element={<VendorExtensions />} />
+                                <Route path="/vendor/claims"      element={<VendorClaims />} />
                             </Route>
                         </Route>
 
