@@ -1,0 +1,178 @@
+/* ============================================
+   Vendor Settings — Dark Teal Theme
+   ============================================ */
+
+.vs-page { display:flex; flex-direction:column; gap:1.25rem; }
+
+/* Toast */
+.vs-toast { display:flex;align-items:center;gap:.625rem;padding:.875rem 1.25rem;border-radius:.875rem;font-size:.875rem;font-weight:600;animation:vsSlideIn .25s ease; }
+.vs-toast-ok  { background:rgba(45,212,191,.1);  color:#2dd4bf; border:1px solid rgba(45,212,191,.2);  }
+.vs-toast-err { background:rgba(251,113,133,.1); color:#fb7185; border:1px solid rgba(251,113,133,.2); }
+@keyframes vsSlideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+
+/* Loading */
+.vs-loading { display:flex;align-items:center;justify-content:center;gap:.875rem;padding:4rem;color:rgba(255,255,255,.3);font-size:.9375rem; }
+.vs-spin { animation:vsSpin .7s linear infinite; }
+@keyframes vsSpin { to{transform:rotate(360deg)} }
+
+/* Layout */
+.vs-layout { display:grid; grid-template-columns:220px 1fr; gap:1.25rem; align-items:start; }
+
+/* Sidebar tabs */
+.vs-tabs {
+    background:#0d1f2d; border:1px solid rgba(255,255,255,.06);
+    border-radius:1.25rem; padding:1.25rem; display:flex;
+    flex-direction:column; gap:.375rem; position:sticky; top:1rem;
+}
+
+/* Vendor card in sidebar */
+.vs-vendor-card {
+    display:flex; flex-direction:column; align-items:center; gap:.25rem;
+    padding:1rem .75rem 1.25rem; margin-bottom:.625rem;
+    border-bottom:1px solid rgba(255,255,255,.07);
+}
+.vs-avatar {
+    width:56px; height:56px; border-radius:1rem;
+    background:linear-gradient(135deg,#0d9488,#14b8a6);
+    color:#fff; font-size:1.5rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:.25rem;
+}
+.vs-vendor-name  { font-size:.9375rem; font-weight:700; color:#fff; text-align:center; }
+.vs-vendor-email { font-size:.7rem; color:rgba(255,255,255,.35); text-align:center; word-break:break-all; }
+.vs-vendor-brand {
+    margin-top:.375rem; padding:3px 10px; border-radius:9999px;
+    background:rgba(45,212,191,.1); color:#2dd4bf;
+    font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em;
+}
+
+/* Tab buttons */
+.vs-tab-btn {
+    display:flex; align-items:center; gap:.625rem;
+    padding:.75rem 1rem; border-radius:.875rem;
+    background:transparent; border:none; color:rgba(255,255,255,.4);
+    font-size:.875rem; font-weight:600; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif; text-align:left;
+    transition:all .2s; width:100%;
+}
+.vs-tab-btn:hover   { background:rgba(255,255,255,.05); color:rgba(255,255,255,.7); }
+.vs-tab-active      { background:rgba(45,212,191,.1)!important; color:#2dd4bf!important; }
+
+/* Panel */
+.vs-panel { display:flex; flex-direction:column; gap:1.25rem; }
+
+/* Section group (profile tab has 2 sections) */
+.vs-section-group { display:flex; flex-direction:column; gap:1.25rem; }
+
+.vs-section {
+    background:#0d1f2d; border:1px solid rgba(255,255,255,.05);
+    border-radius:1.25rem; padding:1.5rem; display:flex;
+    flex-direction:column; gap:1.125rem;
+}
+.vs-section-hd {
+    display:flex; align-items:center; gap:.5rem;
+    font-size:.8125rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.07em; color:rgba(255,255,255,.35);
+    padding-bottom:.75rem; border-bottom:1px solid rgba(255,255,255,.06);
+}
+.vs-section-desc { font-size:.875rem; color:rgba(255,255,255,.4); margin-top:-.25rem; }
+
+/* Field grid */
+.vs-field-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.vs-field { display:flex; flex-direction:column; gap:.35rem; }
+.vs-field-full { grid-column:1/-1; }
+.vs-field label {
+    display:flex; align-items:center; gap:.3rem;
+    font-size:.65rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.07em; color:rgba(255,255,255,.3);
+}
+.vs-readonly { font-weight:400; text-transform:none; letter-spacing:0; color:rgba(255,255,255,.2); font-size:.6rem; }
+
+.vs-input, .vs-textarea {
+    padding:.7rem 1rem; background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.07); border-radius:.75rem;
+    color:#fff; font-size:.875rem; outline:none;
+    font-family:'Plus Jakarta Sans',sans-serif; transition:all .2s;
+}
+.vs-input:focus, .vs-textarea:focus {
+    border-color:rgba(20,184,166,.4); background:rgba(20,184,166,.05);
+    box-shadow:0 0 0 3px rgba(20,184,166,.1);
+}
+.vs-input::placeholder, .vs-textarea::placeholder { color:rgba(255,255,255,.2); }
+.vs-input-disabled { opacity:.45; cursor:not-allowed; }
+.vs-textarea { resize:vertical; line-height:1.6; }
+
+/* Password field */
+.vs-pw-wrap { position:relative; }
+.vs-pw-wrap .vs-input { padding-right:42px; width:100%; box-sizing:border-box; }
+.vs-eye {
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer;
+    display:flex; align-items:center; padding:0;
+}
+.vs-eye:hover { color:rgba(255,255,255,.7); }
+
+/* Password strength */
+.vs-strength { display:flex; align-items:center; gap:.75rem; }
+.vs-str-bar { display:flex; gap:4px; flex:1; }
+.vs-str-seg { height:4px; flex:1; border-radius:9999px; background:rgba(255,255,255,.1); transition:background .3s; }
+.vs-str-weak   { background:#fb7185; }
+.vs-str-good   { background:#fbbf24; }
+.vs-str-strong { background:#2dd4bf; }
+.vs-str-label  { font-size:.75rem; color:rgba(255,255,255,.4); white-space:nowrap; }
+
+/* Divider row (in grid) */
+.vs-divider-row {
+    grid-column:1/-1; display:flex; align-items:center; gap:.75rem;
+    color:rgba(255,255,255,.25); font-size:.7rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.08em;
+}
+.vs-divider-row::before,.vs-divider-row::after {
+    content:''; flex:1; height:1px; background:rgba(255,255,255,.06);
+}
+
+/* Save button */
+.vs-save-btn {
+    display:inline-flex; align-items:center; gap:.5rem; align-self:flex-start;
+    padding:.75rem 1.5rem; border-radius:.875rem;
+    background:linear-gradient(135deg,#0d9488,#14b8a6); color:#fff; border:none;
+    font-size:.875rem; font-weight:700; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif; transition:all .2s;
+    box-shadow:0 4px 14px rgba(13,148,136,.3);
+}
+.vs-save-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 20px rgba(13,148,136,.5); }
+.vs-save-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* Toggle switches */
+.vs-toggles { display:flex; flex-direction:column; gap:.5rem; }
+.vs-toggle-row {
+    display:flex; align-items:center; justify-content:space-between;
+    gap:1.5rem; padding:1rem 1.125rem; border-radius:1rem;
+    background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.04);
+    cursor:pointer; transition:all .2s;
+}
+.vs-toggle-row:hover { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.08); }
+.vs-toggle-info { flex:1; }
+.vs-toggle-label { font-size:.9rem; font-weight:600; color:rgba(255,255,255,.75); }
+.vs-toggle-desc  { font-size:.78rem; color:rgba(255,255,255,.3); margin-top:2px; }
+
+/* Toggle pill */
+.vs-toggle {
+    width:44px; height:24px; border-radius:9999px;
+    background:rgba(255,255,255,.1); position:relative;
+    flex-shrink:0; transition:background .25s;
+}
+.vs-toggle-on { background:#0d9488; }
+.vs-toggle-knob {
+    position:absolute; top:3px; left:3px;
+    width:18px; height:18px; border-radius:50%; background:#fff;
+    transition:transform .25s; box-shadow:0 1px 4px rgba(0,0,0,.3);
+}
+.vs-toggle-on .vs-toggle-knob { transform:translateX(20px); }
+
+@media(max-width:768px) {
+    .vs-layout      { grid-template-columns:1fr; }
+    .vs-tabs        { position:static; flex-direction:row; flex-wrap:wrap; }
+    .vs-vendor-card { display:none; }
+    .vs-field-grid  { grid-template-columns:1fr; }
+}

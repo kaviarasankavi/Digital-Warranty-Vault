@@ -39,6 +39,7 @@ const VendorProducts    = lazy(() => import('./pages/Vendor/VendorProducts'));
 const VendorVerify      = lazy(() => import('./pages/Vendor/VendorVerify'));
 const VendorExtensions  = lazy(() => import('./pages/Vendor/VendorExtensions'));
 const VendorClaims      = lazy(() => import('./pages/Vendor/VendorClaims'));
+const VendorSettings    = lazy(() => import('./pages/Vendor/VendorSettings'));
 const WarrantyExtension = lazy(() => import('./pages/WarrantyExtension/WarrantyExtension'));
 const WarrantyClaims    = lazy(() => import('./pages/WarrantyClaims/WarrantyClaims'));
 const Certificates      = lazy(() => import('./pages/Certificates/Certificates'));
@@ -155,6 +156,7 @@ function App() {
                                 <Route path="/vendor/verify"      element={<VendorVerify />} />
                                 <Route path="/vendor/extensions"  element={<VendorExtensions />} />
                                 <Route path="/vendor/claims"      element={<VendorClaims />} />
+                                <Route path="/vendor/settings"    element={<VendorSettings />} />
                             </Route>
                         </Route>
 
