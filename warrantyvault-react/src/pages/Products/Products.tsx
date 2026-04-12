@@ -17,7 +17,7 @@ import {
     X,
     ArrowUpDown,
 } from 'lucide-react';
-import { Header } from '../../components/layout/Header';
+
 import { productApi, type Product, type ProductFormData, type ProductQueryParams, type Pagination } from '../../api/productApi';
 import { ProductModal } from './ProductModal';
 import { ProductHistoryModal } from './ProductHistoryModal';
@@ -245,7 +245,7 @@ export default function Products() {
 
     return (
         <div className="user-dashboard-main">
-            <Header title="My" subtitle="Vault" />
+
 
             <div className="user-dashboard-content">
                 {/* Stats Overview */}

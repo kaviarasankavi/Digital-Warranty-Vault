@@ -11,7 +11,7 @@ import {
     Layers,
     Award,
 } from 'lucide-react';
-import { Header } from '../../components/layout/Header';
+
 import {
     analyticsApi,
     CategorySummaryItem,
@@ -144,7 +144,7 @@ export default function Analytics() {
 
     return (
         <div className="analytics-page">
-            <Header title="Analytics" />
+
 
 
             <div className="analytics-content">

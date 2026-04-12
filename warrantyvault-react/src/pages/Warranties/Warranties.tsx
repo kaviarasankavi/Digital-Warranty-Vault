@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Header } from '../../components/layout/Header';
+
 import {
     Shield,
     AlertTriangle,
@@ -58,7 +58,7 @@ export default function Warranties() {
 
     return (
         <div className="user-dashboard-main">
-            <Header title="Warranty" subtitle="Registry" />
+
 
             <div className="user-dashboard-content">
                 {/* Stats Row */}

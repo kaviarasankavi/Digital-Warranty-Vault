@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Header } from '../../components/layout/Header';
+
 import {
     UserCheck,
     UserX,
@@ -46,7 +46,7 @@ export default function Owners() {
 
     return (
         <div className="owners-page">
-            <Header title="Registered Owners" />
+
 
             <div className="owners-content">
                 {/* Page Header with Stats */}

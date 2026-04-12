@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
     CheckCircle,
     Plus,
-    FileText,
     Headphones,
     TrendingUp,
     Clock,
@@ -12,7 +11,7 @@ import {
     Shield,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Header } from '../../components/layout/Header';
+
 import { analyticsApi, MonthlySpendingItem } from '../../api/analyticsApi';
 import { productApi, Product } from '../../api/productApi';
 import '../../styles/userDashboard.css';
@@ -91,7 +90,7 @@ export default function Dashboard() {
 
     return (
         <div className="user-dashboard-main">
-            <Header title="Dashboard" subtitle="Overview" />
+
 
             <div className="user-dashboard-content">
                 {/* Bento Grid */}
@@ -154,22 +153,16 @@ export default function Dashboard() {
                     </div>
 
                     {/* Quick Actions */}
-                    <div className="user-bento-card card-medium user-animate-in user-animate-in-3">
+                    <div className="user-bento-card card-small user-animate-in user-animate-in-3">
                         <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '1rem' }}>
                             Quick Actions
                         </h3>
-                        <div className="user-quick-actions">
+                        <div className="user-quick-actions" style={{ gridTemplateColumns: '1fr' }}>
                             <button className="user-quick-action-btn" onClick={() => navigate('/products')}>
                                 <div className="user-qa-icon icon-add">
                                     <Plus size={20} />
                                 </div>
                                 <span>Add Product</span>
-                            </button>
-                            <button className="user-quick-action-btn">
-                                <div className="user-qa-icon icon-export">
-                                    <FileText size={20} />
-                                </div>
-                                <span>Export PDF</span>
                             </button>
                             <button className="user-quick-action-btn">
                                 <div className="user-qa-icon icon-support">

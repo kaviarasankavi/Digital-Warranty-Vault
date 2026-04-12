@@ -361,7 +361,135 @@ export async function initProcedures(sql: any): Promise<void> {
             $$
         `;
 
-        logger.info('All 5 PL/pgSQL stored procedures created successfully');
+        // ============================================================
+        // SUPPORTING TABLE 6: password_change_audit
+        // Tracks every password-change attempt (success + failure)
+        // so administrators can audit suspicious activity.
+        // ============================================================
+        await sql`
+            CREATE TABLE IF NOT EXISTS password_change_audit (
+                audit_id      SERIAL PRIMARY KEY,
+                user_id       VARCHAR(255) NOT NULL,
+                attempted_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+                outcome       VARCHAR(20)  NOT NULL CHECK (outcome IN ('SUCCESS', 'FAILED')),
+                failure_reason VARCHAR(255)
+            )
+        `;
+
+        await sql`
+            CREATE INDEX IF NOT EXISTS idx_pwd_audit_user
+            ON password_change_audit(user_id)
+        `;
+
+        logger.info('password_change_audit table ready');
+
+        // ============================================================
+        // FUNCTION 6: fn_validate_password_change
+        //
+        // PL/pgSQL gate called BEFORE touching MongoDB.
+        // Responsibilities:
+        //   1. Validate all inputs are non-empty.
+        //   2. Enforce minimum password length (>= 6 chars).
+        //   3. Reject if new password == current password.
+        //   4. Insert an audit row (SUCCESS or FAILED).
+        //   5. RAISE typed exceptions so the caller gets clean msgs.
+        //
+        // Parameters:
+        //   p_user_id        – MongoDB ObjectId (stored as text)
+        //   p_new_password   – plaintext new password (pre-hash check)
+        //   p_current_pw_ok  – boolean from bcrypt result (Node sends it)
+        //
+        // Returns: VOID on success, raises on any validation failure.
+        // ============================================================
+        await sql`
+            CREATE OR REPLACE FUNCTION fn_validate_password_change(
+                p_user_id       VARCHAR,
+                p_new_password  TEXT,
+                p_current_pw_ok BOOLEAN
+            )
+            RETURNS VOID
+            LANGUAGE plpgsql
+            AS $$
+            DECLARE
+                v_failure_reason VARCHAR(255) := NULL;
+            BEGIN
+                -- ── Guard: user_id must be provided ───────────────────
+                IF p_user_id IS NULL OR TRIM(p_user_id) = '' THEN
+                    RAISE EXCEPTION 'User ID is required'
+                        USING ERRCODE = 'VW001';
+                END IF;
+
+                -- ── Guard: new password must be provided ──────────────
+                IF p_new_password IS NULL OR TRIM(p_new_password) = '' THEN
+                    v_failure_reason := 'New password is empty';
+                    BEGIN
+                        INSERT INTO password_change_audit (user_id, outcome, failure_reason)
+                        VALUES (p_user_id, 'FAILED', v_failure_reason);
+                    EXCEPTION WHEN OTHERS THEN
+                        NULL;  -- audit insert must never block the exception
+                    END;
+                    RAISE EXCEPTION 'New password cannot be empty'
+                        USING ERRCODE = 'VW002';
+                END IF;
+
+                -- ── Guard: minimum length >= 6 ────────────────────────
+                IF LENGTH(TRIM(p_new_password)) < 6 THEN
+                    v_failure_reason := 'New password too short (' ||
+                                        LENGTH(TRIM(p_new_password))::TEXT || ' chars)';
+                    BEGIN
+                        INSERT INTO password_change_audit (user_id, outcome, failure_reason)
+                        VALUES (p_user_id, 'FAILED', v_failure_reason);
+                    EXCEPTION WHEN OTHERS THEN
+                        NULL;
+                    END;
+                    RAISE EXCEPTION 'New password must be at least 6 characters long'
+                        USING ERRCODE = 'VW003';
+                END IF;
+
+                -- ── Guard: current password must be correct ───────────
+                IF NOT p_current_pw_ok THEN
+                    v_failure_reason := 'Current password mismatch';
+                    BEGIN
+                        INSERT INTO password_change_audit (user_id, outcome, failure_reason)
+                        VALUES (p_user_id, 'FAILED', v_failure_reason);
+                    EXCEPTION WHEN OTHERS THEN
+                        NULL;
+                    END;
+                    RAISE EXCEPTION 'Current password is incorrect. Please try again'
+                        USING ERRCODE = 'VW004';
+                END IF;
+
+                -- ── All checks passed — log SUCCESS ───────────────────
+                BEGIN
+                    INSERT INTO password_change_audit (user_id, outcome)
+                    VALUES (p_user_id, 'SUCCESS');
+                EXCEPTION WHEN OTHERS THEN
+                    NULL;  -- non-fatal audit failure must never abort the operation
+                END;
+
+                RAISE NOTICE 'Password change validated for user %', p_user_id;
+
+            EXCEPTION
+                -- Re-raise our own custom errors as-is
+                WHEN SQLSTATE 'VW001' THEN RAISE;
+                WHEN SQLSTATE 'VW002' THEN RAISE;
+                WHEN SQLSTATE 'VW003' THEN RAISE;
+                WHEN SQLSTATE 'VW004' THEN RAISE;
+                -- Catch any unexpected DB error and wrap it
+                WHEN OTHERS THEN
+                    BEGIN
+                        INSERT INTO password_change_audit (user_id, outcome, failure_reason)
+                        VALUES (p_user_id, 'FAILED', SQLERRM);
+                    EXCEPTION WHEN OTHERS THEN
+                        NULL;
+                    END;
+                    RAISE EXCEPTION 'An unexpected error occurred during password validation: %', SQLERRM
+                        USING ERRCODE = 'VW099';
+            END;
+            $$
+        `;
+
+        logger.info('All 6 PL/pgSQL procedures/functions created successfully (incl. fn_validate_password_change)');
 
     } catch (error) {
         logger.error('Failed to initialize stored procedures:', error);

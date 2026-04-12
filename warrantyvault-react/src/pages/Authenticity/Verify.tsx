@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Header } from '../../components/layout/Header';
+
 import { productApi, Product } from '../../api/productApi';
 import {
     Shield,
@@ -76,7 +76,7 @@ export default function Verify() {
 
     return (
         <div className="verify-page">
-            <Header title="Authenticity Verification" />
+
 
             <div className="verify-content">
                 {/* Top Section: Verification Portal + Stats */}
