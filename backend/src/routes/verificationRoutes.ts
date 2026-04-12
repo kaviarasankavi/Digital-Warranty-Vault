@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/authMiddleware';
+import { authMiddleware } from '../middleware/authMiddleware';
 import {
     createVerificationRequest,
     getMyRequests,
@@ -12,7 +12,7 @@ import {
 const router = Router();
 
 // All routes require a logged-in user (user or vendor)
-router.use(authenticate);
+router.use(authMiddleware);
 
 // User routes
 router.post('/request',      createVerificationRequest);

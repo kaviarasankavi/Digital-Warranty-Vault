@@ -12,6 +12,7 @@ import {
     Sparkles,
     Bell,
     ChevronRight,
+    CalendarPlus,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../store/authStore';
@@ -19,12 +20,13 @@ import { analyticsApi } from '../../../api/analyticsApi';
 import '../../../styles/userDashboard.css';
 
 const navItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/products', icon: Archive, label: 'My Vault' },
-    { path: '/verify', icon: ScanLine, label: 'Verify' },
-    { path: '/analytics', icon: BarChart3, label: 'Analytics' },
-    { path: '/owners', icon: Users, label: 'Ownership' },
-    { path: '/settings', icon: Settings, label: 'Settings' },
+    { path: '/dashboard',          icon: LayoutDashboard, label: 'Dashboard'         },
+    { path: '/products',           icon: Archive,         label: 'My Vault'          },
+    { path: '/verify',             icon: ScanLine,        label: 'Verify'            },
+    { path: '/warranty-extension', icon: CalendarPlus,    label: 'Extend Warranty'   },
+    { path: '/analytics',          icon: BarChart3,       label: 'Analytics'         },
+    { path: '/owners',             icon: Users,           label: 'Ownership'         },
+    { path: '/settings',           icon: Settings,        label: 'Settings'          },
 ];
 
 export function Sidebar() {
@@ -86,7 +88,7 @@ export function Sidebar() {
                 <div className="user-nav-section">
                     <span className="user-nav-label">Main Menu</span>
                     <ul className="user-nav-list">
-                        {navItems.slice(0, 4).map((item) => (
+                        {navItems.slice(0, 5).map((item) => (
                             <li key={item.path}>
                                 <NavLink
                                     to={item.path}

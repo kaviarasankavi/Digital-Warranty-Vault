@@ -15,6 +15,7 @@ import announcementRoutes from './routes/announcementRoutes';
 import newsRoutes from './routes/newsRoutes';
 import { initMySQL } from './config/database-mysql';
 import verificationRoutes from './routes/verificationRoutes';
+import warrantyExtensionRoutes from './routes/warrantyExtensionRoutes';
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/verify', verificationRoutes);
+app.use('/api/warranty-extension', warrantyExtensionRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────
 app.use((req, res) => {

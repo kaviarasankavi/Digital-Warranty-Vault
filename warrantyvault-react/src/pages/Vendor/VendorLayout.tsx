@@ -15,9 +15,11 @@ import {
     MessageSquare,
     User,
     BadgeCheck,
+    CalendarPlus,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { verificationApi } from '../../api/verificationApi';
+import { warrantyExtensionApi } from '../../api/warrantyExtensionApi';
 import './VendorLayout.css';
 
 const navItems = [
@@ -25,9 +27,10 @@ const navItems = [
     { path: '/vendor/products',   icon: Package,         label: 'My Products' },
     { path: '/vendor/warranties', icon: ShieldCheck,     label: 'Warranties' },
     { path: '/vendor/orders',     icon: ClipboardList,   label: 'Orders' },
-    { path: '/vendor/catalog',    icon: Tag,             label: 'Catalog' },
-    { path: '/vendor/verify',     icon: BadgeCheck,      label: 'Verify Requests', badge: true },
-    { path: '/vendor/analytics',  icon: BarChart3,       label: 'Analytics' },
+    { path: '/vendor/catalog',     icon: Tag,             label: 'Catalog' },
+    { path: '/vendor/verify',      icon: BadgeCheck,      label: 'Verify Requests',  badge: 'verify'     },
+    { path: '/vendor/extensions',  icon: CalendarPlus,    label: 'Extensions',       badge: 'extension'  },
+    { path: '/vendor/analytics',   icon: BarChart3,       label: 'Analytics' },
     { path: '/vendor/support',    icon: MessageSquare,   label: 'Support' },
     { path: '/vendor/settings',   icon: Settings,        label: 'Settings' },
 ];
@@ -43,17 +46,20 @@ function PageLoader() {
 export default function VendorLayout() {
     const navigate = useNavigate();
     const { user, logout } = useAuthStore();
-    const [notifOpen,     setNotifOpen]     = useState(false);
-    const [pendingCount,  setPendingCount]  = useState(0);
+    const [notifOpen,        setNotifOpen]        = useState(false);
+    const [pendingCount,     setPendingCount]     = useState(0);
+    const [extPendingCount,  setExtPendingCount]  = useState(0);
 
-    // Poll pending verification count every 30 s
+    // Poll pending counts every 30 s
     useEffect(() => {
-        const fetch = () =>
+        const fetchCounts = () => {
             verificationApi.getVendorPendingCount()
-                .then(n => setPendingCount(n))
-                .catch(() => {});
-        fetch();
-        const id = setInterval(fetch, 30000);
+                .then(n => setPendingCount(n)).catch(() => {});
+            warrantyExtensionApi.getVendorPendingCount()
+                .then(n => setExtPendingCount(n)).catch(() => {});
+        };
+        fetchCounts();
+        const id = setInterval(fetchCounts, 30000);
         return () => clearInterval(id);
     }, []);
 
@@ -80,22 +86,27 @@ export default function VendorLayout() {
 
                     {/* Nav */}
                     <nav className="vd-nav">
-                        {navItems.map(({ path, icon: Icon, label, badge }) => (
-                            <NavLink
-                                key={path}
-                                to={path}
-                                className={({ isActive }) =>
-                                    `vd-nav-item ${isActive ? 'vd-nav-active' : ''}`
-                                }
-                            >
-                                <Icon size={17} className="vd-nav-icon" />
-                                <span>{label}</span>
-                                {badge && pendingCount > 0 && (
-                                    <span className="vd-nav-badge">{pendingCount}</span>
-                                )}
-                                <ChevronRight size={13} className="vd-nav-arrow" />
-                            </NavLink>
-                        ))}
+                        {navItems.map(({ path, icon: Icon, label, badge }) => {
+                            const badgeCount =
+                                badge === 'verify'    ? pendingCount :
+                                badge === 'extension' ? extPendingCount : 0;
+                            return (
+                                <NavLink
+                                    key={path}
+                                    to={path}
+                                    className={({ isActive }) =>
+                                        `vd-nav-item ${isActive ? 'vd-nav-active' : ''}`
+                                    }
+                                >
+                                    <Icon size={17} className="vd-nav-icon" />
+                                    <span>{label}</span>
+                                    {badgeCount > 0 && (
+                                        <span className="vd-nav-badge">{badgeCount}</span>
+                                    )}
+                                    <ChevronRight size={13} className="vd-nav-arrow" />
+                                </NavLink>
+                            );
+                        })}
                     </nav>
                 </div>
 

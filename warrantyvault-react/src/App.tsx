@@ -35,8 +35,10 @@ const AdminUsers = lazy(() => import('./pages/Admin/AdminUsers'));
 // ── Vendor pages (lazy) ───────────────────────────────────────────────────────
 const VendorLayout    = lazy(() => import('./pages/Vendor/VendorLayout'));
 const VendorDashboard = lazy(() => import('./pages/Vendor/VendorDashboard'));
-const VendorProducts  = lazy(() => import('./pages/Vendor/VendorProducts'));
-const VendorVerify    = lazy(() => import('./pages/Vendor/VendorVerify'));
+const VendorProducts    = lazy(() => import('./pages/Vendor/VendorProducts'));
+const VendorVerify      = lazy(() => import('./pages/Vendor/VendorVerify'));
+const VendorExtensions  = lazy(() => import('./pages/Vendor/VendorExtensions'));
+const WarrantyExtension = lazy(() => import('./pages/WarrantyExtension/WarrantyExtension'));
 
 const queryClient = new QueryClient({
     defaultOptions: { queries: { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false } },
@@ -108,10 +110,11 @@ function App() {
                                 <Route path="/dashboard" element={<Dashboard />} />
                                 <Route path="/products" element={<Products />} />
                                 <Route path="/warranties" element={<Warranties />} />
-                                <Route path="/verify" element={<Verify />} />
-                                <Route path="/analytics" element={<Analytics />} />
-                                <Route path="/owners" element={<Owners />} />
-                                <Route path="/settings" element={<Settings />} />
+                                <Route path="/verify"             element={<Verify />} />
+                                <Route path="/analytics"          element={<Analytics />} />
+                                <Route path="/owners"             element={<Owners />} />
+                                <Route path="/settings"           element={<Settings />} />
+                                <Route path="/warranty-extension" element={<WarrantyExtension />} />
                             </Route>
                         </Route>
 
@@ -143,8 +146,9 @@ function App() {
                             <Route element={<VendorLayout />}>
                                 <Route path="/vendor" element={<Navigate to="/vendor/dashboard" replace />} />
                                 <Route path="/vendor/dashboard" element={<VendorDashboard />} />
-                                <Route path="/vendor/products"  element={<VendorProducts />} />
-                                <Route path="/vendor/verify"    element={<VendorVerify />} />
+                                <Route path="/vendor/products"    element={<VendorProducts />} />
+                                <Route path="/vendor/verify"      element={<VendorVerify />} />
+                                <Route path="/vendor/extensions"  element={<VendorExtensions />} />
                             </Route>
                         </Route>
 
