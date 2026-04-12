@@ -89,10 +89,10 @@ export default function AdminAnalytics() {
                     {isLoading ? <div className="aa-chart-loading"/> : (
                         <ResponsiveContainer width="100%" height={220}>
                             <LineChart data={ch?.monthlySignups ?? []} margin={{ top:10, right:10, left:-20, bottom:0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)"/>
-                                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }}/>
-                                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }}/>
-                                <Tooltip contentStyle={{ borderRadius: '10px', fontSize: 13, border: '1px solid #e2e8f0' }}/>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)"/>
+                                <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'rgba(255,255,255,.4)' }}/>
+                                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'rgba(255,255,255,.4)' }}/>
+                                <Tooltip contentStyle={{ borderRadius: '10px', fontSize: 13, background: '#1a1a2e', border: '1px solid rgba(255,255,255,.1)', color: '#fff' }}/>
                                 <Line type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 4, fill: '#6366f1' }} activeDot={{ r: 6 }}/>
                             </LineChart>
                         </ResponsiveContainer>
@@ -110,7 +110,7 @@ export default function AdminAnalytics() {
                                         <Cell key={entry.status} fill={PIE_VERIFY_COLORS[entry.status] ?? '#94a3b8'}/>
                                     ))}
                                 </Pie>
-                                <Tooltip contentStyle={{ borderRadius: '10px', fontSize: 12 }}/>
+                                <Tooltip contentStyle={{ borderRadius: '10px', fontSize: 12, background: '#1a1a2e', border: '1px solid rgba(255,255,255,.1)', color: '#fff' }}/>
                             </PieChart>
                         </ResponsiveContainer>
                     )}
@@ -125,11 +125,11 @@ export default function AdminAnalytics() {
                     {isLoading ? <div className="aa-chart-loading"/> : (
                         <ResponsiveContainer width="100%" height={220}>
                             <BarChart data={ch?.brandDistribution ?? []} margin={{ top:10, right:10, left:-20, bottom:0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,.06)"/>
-                                <XAxis dataKey="brand" tick={{ fontSize: 11, fill: '#94a3b8' }}/>
-                                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }}/>
-                                <Tooltip contentStyle={{ borderRadius: '10px', fontSize: 13 }}/>
-                                <Bar dataKey="products" fill="#6366f1" radius={[6,6,0,0]}/>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)"/>
+                                <XAxis dataKey="brand" tick={{ fontSize: 11, fill: 'rgba(255,255,255,.4)' }}/>
+                                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'rgba(255,255,255,.4)' }}/>
+                                <Tooltip contentStyle={{ borderRadius: '10px', fontSize: 13, background: '#1a1a2e', border: '1px solid rgba(255,255,255,.1)', color: '#fff' }}/>
+                                <Bar dataKey="products" fill="#818cf8" radius={[6,6,0,0]}/>
                             </BarChart>
                         </ResponsiveContainer>
                     )}
@@ -146,7 +146,7 @@ export default function AdminAnalytics() {
                                         <Cell key={entry.status} fill={PIE_CLAIM_COLORS[entry.status] ?? '#94a3b8'}/>
                                     ))}
                                 </Pie>
-                                <Tooltip contentStyle={{ borderRadius: '10px', fontSize: 12 }}/>
+                                <Tooltip contentStyle={{ borderRadius: '10px', fontSize: 12, background: '#1a1a2e', border: '1px solid rgba(255,255,255,.1)', color: '#fff' }}/>
                             </PieChart>
                         </ResponsiveContainer>
                     )}
