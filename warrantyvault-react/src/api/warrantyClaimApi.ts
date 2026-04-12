@@ -30,6 +30,7 @@ export interface WarrantyClaim {
     scheduledTime:     string | null;
     vendorMessage:     string;
     rejectionReason:   string;
+    isEscalated:       boolean;
     submittedAt:       string;
     scheduledAt:       string | null;
     completedAt:       string | null;

@@ -15,6 +15,7 @@ export interface IVerificationRequest extends Document {
     requestedAt: Date;
     verifiedAt: Date | null;
     vendorNote: string;
+    isEscalated: boolean;
 }
 
 const verificationRequestSchema = new Schema<IVerificationRequest>(
@@ -31,6 +32,7 @@ const verificationRequestSchema = new Schema<IVerificationRequest>(
         requestedAt: { type: Date, default: () => new Date() },
         verifiedAt:  { type: Date, default: null },
         vendorNote:  { type: String, default: '' },
+        isEscalated: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

@@ -29,6 +29,7 @@ export interface IWarrantyClaim extends Document {
     scheduledTime:       string | null;  // e.g. "10:00 AM"
     vendorMessage:       string;
     rejectionReason:     string;
+    isEscalated:         boolean;
     submittedAt:         Date;
     scheduledAt:         Date | null;
     completedAt:         Date | null;
@@ -65,6 +66,7 @@ const claimSchema = new Schema<IWarrantyClaim>(
         scheduledTime:     { type: String, default: null },
         vendorMessage:     { type: String, default: '' },
         rejectionReason:   { type: String, default: '' },
+        isEscalated:       { type: Boolean, default: false },
         submittedAt:       { type: Date, default: () => new Date() },
         scheduledAt:       { type: Date, default: null },
         completedAt:       { type: Date, default: null },

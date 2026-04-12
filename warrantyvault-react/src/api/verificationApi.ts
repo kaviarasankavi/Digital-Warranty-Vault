@@ -14,6 +14,7 @@ export interface VerificationRequest {
     requestedAt: string;
     verifiedAt: string | null;
     vendorNote: string;
+    isEscalated: boolean;
 }
 
 export const verificationApi = {

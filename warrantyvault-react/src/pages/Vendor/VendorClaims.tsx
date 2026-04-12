@@ -167,6 +167,11 @@ export default function VendorClaims() {
                                     <span className="vc-status-text" style={{ color: STATUS_COLOR[c.status] }}>
                                         {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
                                     </span>
+                                    {c.isEscalated && (
+                                        <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '99px', background: '#fef3c7', color: '#b45309', fontWeight: 700, marginLeft: '0.5rem', border: '1px solid #fde68a' }}>
+                                            ESCALATED
+                                        </span>
+                                    )}
                                     <button className="vc-expand-btn" onClick={() => setExpanded(isExp ? null : c._id)}>
                                         {isExp ? '▲ Less' : '▼ Details'}
                                     </button>

@@ -152,6 +152,11 @@ export default function VendorVerify() {
                                     <div className="vv-product-brand">{req.brand}</div>
                                 </div>
                                 <div className={`vv-status-badge vv-s-${req.status}`}>
+                                    {req.isEscalated && (
+                                        <span style={{ fontSize: '0.6rem', padding: '2px 6px', borderRadius: '99px', background: '#fef3c7', color: '#b45309', fontWeight: 700, marginRight: '0.5rem', border: '1px solid #fde68a' }}>
+                                            ESCALATED
+                                        </span>
+                                    )}
                                     {req.status === 'verified' && <CheckCircle size={11} />}
                                     {req.status === 'pending'  && <Clock       size={11} />}
                                     {req.status === 'rejected' && <XCircle     size={11} />}

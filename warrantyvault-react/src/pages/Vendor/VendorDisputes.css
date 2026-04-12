@@ -1,0 +1,58 @@
+/* VendorDisputes */
+.vdisp-page { animation: aaFade .3s ease; }
+.vdisp-header { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; }
+.vdisp-header h1 { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin: 0; }
+.vdisp-header p { color: #64748b; margin: 0.25rem 0 0; }
+
+.vdisp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: stretch; }
+
+@media(max-width: 900px) {
+    .vdisp-grid { grid-template-columns: 1fr; }
+}
+
+.vdisp-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); height: 100%; transition: all 0.2s; cursor: pointer; }
+.vdisp-card:hover { border-color: #cbd5e1; box-shadow: 0 6px 12px -2px rgba(0,0,0,0.05); }
+
+.vdisp-card-head { display: flex; justify-content: space-between; align-items: center; }
+.vdisp-card-title { font-weight: 700; font-size: 1.1rem; color: #0f172a; }
+.vdisp-card-type { font-size: 0.7rem; padding: 3px 8px; border-radius: 99px; font-weight: 700; background: #f1f5f9; color: #475569; text-transform: uppercase; }
+
+.vdisp-card-meta { display: flex; flex-direction: column; gap: 0.5rem; }
+.vdisp-card-row { display: flex; justify-content: space-between; font-size: 0.85rem; }
+.vdisp-card-row .label { color: #64748b; }
+.vdisp-card-row .val { color: #334155; font-weight: 500; }
+
+.vdisp-status { font-size: 0.7rem; padding: 4px 10px; border-radius: 999px; font-weight: 700; align-self: flex-start; text-transform: uppercase; margin-top: auto; }
+.vdisp-status.open { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.vdisp-status.resolved { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+
+.vdisp-empty { text-align: center; padding: 4rem; color: #94a3b8; font-size: 1.1rem; background: #fff; border-radius: 1rem; border: 1px dashed #cbd5e1; }
+
+/* Modal */
+.vdisp-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+.vdisp-modal { background: #fff; border-radius: 1.25rem; width: 90%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); overflow: hidden; }
+
+.vdisp-modal-head { padding: 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+.vdisp-modal-head h2 { margin: 0; font-size: 1.25rem; color: #0f172a; }
+.vdisp-close-btn { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; line-height: 1; }
+
+.vdisp-modal-body { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; background: #f8fafc; }
+.vdisp-msg { display: flex; flex-direction: column; max-width: 85%; }
+.vdisp-msg.user { align-self: flex-start; }
+.vdisp-msg.vendor { align-self: flex-end; align-items: flex-end; }
+.vdisp-msg.admin { align-self: center; max-width: 95%; }
+
+.vdisp-msg-info { font-size: 0.75rem; color: #64748b; margin-bottom: 0.25rem; font-weight: 600; display: flex; gap: 0.5rem; align-items: center; }
+.vdisp-msg.vendor .vdisp-msg-info { flex-direction: row-reverse; }
+
+.vdisp-bubble { padding: 0.75rem 1rem; border-radius: 1rem; font-size: 0.9rem; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.vdisp-msg.user .vdisp-bubble { background: #fff; border: 1px solid #e2e8f0; color: #334155; border-bottom-left-radius: 0.25rem; }
+.vdisp-msg.vendor .vdisp-bubble { background: #2563eb; color: #fff; border-bottom-right-radius: 0.25rem; }
+.vdisp-msg.admin .vdisp-bubble { background: #f0fdfa; color: #0f766e; border: 1px solid #ccfbf1; text-align: center; }
+
+.vdisp-modal-foot { padding: 1rem 1.5rem; border-top: 1px solid #e2e8f0; background: #fff; display: flex; gap: 0.75rem; }
+.vdisp-input { flex: 1; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem; outline: none; font-size: 0.9rem; }
+.vdisp-input:focus { border-color: #2563eb; ring: 2px solid rgba(37,99,235,0.2); }
+.vdisp-btn-send { padding: 0.75rem 1.25rem; background: #2563eb; color: #fff; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.vdisp-btn-send:hover:not(:disabled) { background: #1d4ed8; }
+.vdisp-btn-send:disabled { opacity: 0.5; cursor: not-allowed; }

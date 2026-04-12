@@ -22,6 +22,7 @@ const LandingPage = lazy(() => import('./pages/Landing'));
 const AdminLogin = lazy(() => import('./pages/Admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./pages/Admin/AdminLayout'));
 const AdminAuthenticity = lazy(() => import('./pages/Admin/AdminAuthenticity'));
+const AdminDisputes = lazy(() => import('./pages/Admin/AdminDisputes'));
 const AdminSettings = lazy(() => import('./pages/Admin/AdminSettings'));
 const AdminAnnouncements = lazy(() => import('./pages/Admin/AdminAnnouncements'));
 const AdminNews = lazy(() => import('./pages/Admin/AdminNews'));
@@ -34,6 +35,7 @@ const VendorLayout    = lazy(() => import('./pages/Vendor/VendorLayout'));
 const VendorDashboard = lazy(() => import('./pages/Vendor/VendorDashboard'));
 const VendorProducts    = lazy(() => import('./pages/Vendor/VendorProducts'));
 const VendorHome        = lazy(() => import('./pages/Vendor/VendorHome'));
+const VendorDisputes    = lazy(() => import('./pages/Vendor/VendorDisputes'));
 const VendorVerify      = lazy(() => import('./pages/Vendor/VendorVerify'));
 const VendorExtensions  = lazy(() => import('./pages/Vendor/VendorExtensions'));
 const VendorClaims      = lazy(() => import('./pages/Vendor/VendorClaims'));
@@ -133,6 +135,7 @@ function App() {
                             <Route element={<AdminLayout />}>
                                 <Route index element={<Navigate to="/admin/analytics" replace />} />
                                 <Route path="verify" element={<AdminAuthenticity />} />
+                                <Route path="disputes" element={<AdminDisputes />} />
                                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                                 <Route path="announcements" element={<AdminAnnouncements />} />
                                 <Route path="news" element={<AdminNews />} />
@@ -151,6 +154,7 @@ function App() {
                                 <Route path="/vendor/verify"      element={<VendorVerify />} />
                                 <Route path="/vendor/extensions"  element={<VendorExtensions />} />
                                 <Route path="/vendor/claims"      element={<VendorClaims />} />
+                                <Route path="/vendor/disputes"    element={<VendorDisputes />} />
                                 <Route path="/vendor/settings"    element={<VendorSettings />} />
                             </Route>
                         </Route>

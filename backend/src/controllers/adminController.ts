@@ -1,13 +1,14 @@
 import { Response, Request } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { asyncHandler } from '../utils/asyncHandler';
-import { NotFoundError, AuthorizationError } from '../utils/errors';
+import { NotFoundError, AuthorizationError, ValidationError } from '../utils/errors';
 import { User } from '../models/User';
 import { MongoProduct } from '../models/MongoProduct';
 import { VerificationRequest } from '../models/VerificationRequest';
 import { WarrantyExtensionRequest } from '../models/WarrantyExtensionRequest';
 import { WarrantyClaim } from '../models/WarrantyClaim';
 import { WarrantyCertificate } from '../models/WarrantyCertificate';
+import { Dispute } from '../models/Dispute';
 
 // ── PATCH /api/admin/users/:id/suspend ──────────────────────────────────────
 export const suspendUser = asyncHandler(
@@ -247,6 +248,104 @@ export const getVerificationLog = asyncHandler(
                 totalPages: Math.ceil(total / limitNum),
             },
         });
+    }
+);
+
+// ── GET /api/admin/disputes ──────────────────────────────────────────────────
+export const getAdminDisputes = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+        const { status, page = '1', limit = '25' } = req.query as Record<string, string | undefined>;
+        const pageNum  = Math.max(1, parseInt(page, 10));
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
+        const skip = (pageNum - 1) * limitNum;
+
+        const query: any = {};
+        if (status && status !== 'all') query.status = status;
+
+        const [total, docs] = await Promise.all([
+            Dispute.countDocuments(query),
+            Dispute.find(query).sort({ updatedAt: -1 }).skip(skip).limit(limitNum).lean()
+        ]);
+
+        const [open, resolved_user, resolved_vendor] = await Promise.all([
+            Dispute.countDocuments({ status: 'open' }),
+            Dispute.countDocuments({ status: 'resolved_user' }),
+            Dispute.countDocuments({ status: 'resolved_vendor' }),
+        ]);
+
+        res.json({
+            success: true,
+            data: docs,
+            summary: { total: open + resolved_user + resolved_vendor, open, resolved_user, resolved_vendor },
+            pagination: { page: pageNum, limit: limitNum, totalCount: total, totalPages: Math.ceil(total / limitNum) }
+        });
+    }
+);
+
+// ── POST /api/admin/disputes/:id/message ─────────────────────────────────────
+export const addAdminMessage = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+        const { text } = req.body;
+        if (!text) throw new ValidationError('Message text required.');
+
+        const dispute = await Dispute.findById(req.params.id);
+        if (!dispute) throw new NotFoundError('Dispute not found.');
+        if (dispute.status !== 'open') throw new ValidationError('Cannot message a resolved dispute.');
+
+        dispute.messages.push({
+            sender: 'admin',
+            senderName: 'System Administrator',
+            text,
+            timestamp: new Date()
+        });
+
+        await dispute.save();
+        res.json({ success: true, data: dispute });
+    }
+);
+
+// ── PATCH /api/admin/disputes/:id/resolve ────────────────────────────────────
+export const resolveDispute = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+        const { resolution, resolutionReason } = req.body;
+        if (!['force_approve', 'uphold_rejection'].includes(resolution)) {
+            throw new ValidationError('Invalid resolution type.');
+        }
+
+        const dispute = await Dispute.findById(req.params.id);
+        if (!dispute) throw new NotFoundError('Dispute not found.');
+        if (dispute.status !== 'open') throw new ValidationError('Dispute is already resolved.');
+
+        const newStatus = resolution === 'force_approve' ? 'resolved_user' : 'resolved_vendor';
+        dispute.status = newStatus;
+        dispute.resolutionReason = resolutionReason || '';
+
+        // Update underlying model
+        if (dispute.referenceType === 'claim') {
+            const claim = await WarrantyClaim.findById(dispute.referenceId);
+            if (claim) {
+                claim.isEscalated = false;
+                if (resolution === 'force_approve') {
+                    claim.status = 'completed';
+                    claim.vendorMessage += '\n[SYSTEM] Claim force-approved by Admin via Dispute Resolution.';
+                }
+                await claim.save();
+            }
+        } else if (dispute.referenceType === 'verification') {
+            const verify = await VerificationRequest.findById(dispute.referenceId);
+            if (verify) {
+                verify.isEscalated = false;
+                if (resolution === 'force_approve') {
+                    verify.status = 'verified';
+                    verify.verifiedAt = new Date();
+                    verify.vendorNote += '\n[SYSTEM] Verification force-approved by Admin via Dispute Resolution.';
+                }
+                await verify.save();
+            }
+        }
+
+        await dispute.save();
+        res.json({ success: true, data: dispute });
     }
 );
 

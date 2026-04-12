@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { productApi, Product } from '../../api/productApi';
 import { verificationApi, VerificationRequest } from '../../api/verificationApi';
+import { disputesApi } from '../../api/disputesApi';
 import {
     Shield, Search, CheckCircle, XCircle, AlertCircle,
-    Clock, ChevronRight, Scan, Send, RefreshCw,
+    Clock, ChevronRight, Scan, Send, RefreshCw, MessageSquareWarning,
 } from 'lucide-react';
 import './Verify.css';
 
@@ -12,6 +13,10 @@ export default function Verify() {
     const [selectedProductId, setSelectedProductId] = useState('');
     const [isSubmitting,      setIsSubmitting]      = useState(false);
     const [submitMsg,         setSubmitMsg]         = useState<{ text: string; ok: boolean } | null>(null);
+
+    const [escalateReqId, setEscalateReqId] = useState<string | null>(null);
+    const [escalateMsg, setEscalateMsg] = useState('');
+    const [escalating, setEscalating] = useState(false);
     const [myRequests,        setMyRequests]        = useState<VerificationRequest[]>([]);
     const [loadingRequests,   setLoadingRequests]   = useState(true);
     const [refreshing,        setRefreshing]        = useState(false);
@@ -80,8 +85,24 @@ export default function Verify() {
     };
 
     // ── Helpers ──────────────────────────────────────────────────────────────
-    const statusOf = (productId: number) =>
-        myRequests.find(r => r.productId === productId)?.status ?? null;
+    const requestOf = (productId: number) => myRequests.find(r => r.productId === productId) ?? null;
+    const statusOf = (productId: number) => requestOf(productId)?.status ?? null;
+
+    const submitEscalation = async () => {
+        if (!escalateReqId || !escalateMsg.trim()) return;
+        setEscalating(true);
+        try {
+            await disputesApi.openDispute(escalateReqId, 'verification', escalateMsg);
+            setEscalateReqId(null);
+            setEscalateMsg('');
+            loadRequests(true);
+        } catch (e: any) {
+            console.error(e);
+            alert(e?.response?.data?.message || 'Failed to escalate');
+        } finally {
+            setEscalating(false);
+        }
+    };
 
     const stats = {
         total:    myRequests.length,
@@ -101,7 +122,8 @@ export default function Verify() {
     };
 
     const selectedProduct = products.find(p => String(p.id) === selectedProductId);
-    const selectedStatus  = selectedProduct ? statusOf(selectedProduct.id) : null;
+    const selectedReq     = selectedProduct ? requestOf(selectedProduct.id) : null;
+    const selectedStatus  = selectedReq ? selectedReq.status : null;
 
     return (
         <div className="verify-page">
@@ -159,10 +181,26 @@ export default function Verify() {
 
                         {/* Status of selected product */}
                         {selectedProduct && selectedStatus && (
-                            <div className={`verify-status-bar status-bar-${selectedStatus}`}>
-                                {selectedStatus === 'verified' && <><CheckCircle size={15} /> <strong>{selectedProduct.name}</strong> has been verified by <strong>{selectedProduct.brand}</strong></>}
-                                {selectedStatus === 'pending'  && <><Clock size={15} /> Verification request sent to <strong>{selectedProduct.brand}</strong> — awaiting response</>}
-                                {selectedStatus === 'rejected' && <><XCircle size={15} /> Verification was rejected by <strong>{selectedProduct.brand}</strong>. You may re-submit.</>}
+                            <div className={`verify-status-bar status-bar-${selectedStatus}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                <div>
+                                    {selectedStatus === 'verified' && <><CheckCircle size={15} /> <strong>{selectedProduct.name}</strong> has been verified by <strong>{selectedProduct.brand}</strong></>}
+                                    {selectedStatus === 'pending'  && <><Clock size={15} /> Verification request sent to <strong>{selectedProduct.brand}</strong> — awaiting response</>}
+                                    {selectedStatus === 'rejected' && <><XCircle size={15} /> Verification was rejected by <strong>{selectedProduct.brand}</strong>. You may re-submit.</>}
+                                </div>
+                                {selectedStatus === 'rejected' && selectedReq && (
+                                    selectedReq.isEscalated ? (
+                                        <div style={{ color: '#b45309', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#fef3c7', padding: '0.25rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #fde68a' }}>
+                                            <MessageSquareWarning size={14} /> UNDER ADMIN REVIEW
+                                        </div>
+                                    ) : (
+                                        <button 
+                                            onClick={() => { setEscalateReqId(selectedReq._id); setEscalateMsg(''); }}
+                                            style={{ background: '#fef3c7', border: '1px solid #fde68a', color: '#b45309', padding: '0.35rem 0.75rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                        >
+                                            <MessageSquareWarning size={14} /> Escalate to Admin
+                                        </button>
+                                    )
+                                )}
                             </div>
                         )}
 
@@ -292,6 +330,32 @@ export default function Verify() {
                     </div>
                 </div>
 
+                {/* Escalate Modal */}
+                {escalateReqId && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(4px)' }}>
+                        <div style={{ background: '#fff', borderRadius: '1rem', width: '90%', maxWidth: '500px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <MessageSquareWarning size={20} color="#f59e0b" /> Escalate Request
+                            </h3>
+                            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                                Unfairly rejected? Ask an Admin to review and force-verify this product.
+                            </p>
+                            <textarea 
+                                rows={4}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #cbd5e1', outline: 'none', resize: 'vertical' }}
+                                placeholder="Explain why you are escalating this rejection..."
+                                value={escalateMsg}
+                                onChange={e => setEscalateMsg(e.target.value)}
+                            />
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                                <button onClick={() => setEscalateReqId(null)} style={{ background: 'transparent', border: 'none', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={submitEscalation} disabled={escalating || !escalateMsg.trim()} style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer', opacity: (escalating || !escalateMsg.trim()) ? 0.5 : 1 }}>
+                                    {escalating ? 'Submitting...' : 'Submit Escalation'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -16,6 +16,7 @@ import {
     Newspaper,
     Activity,
     UserCircle,
+    ShieldAlert,
 } from 'lucide-react';
 import { useAdminAuthStore } from '../../store/adminAuthStore';
 import { useDataStore } from '../../store/dataStore';
@@ -23,6 +24,7 @@ import './AdminLayout.css';
 
 const navItems = [
     { path: '/admin/verify', icon: ScanLine, label: 'Authenticity' },
+    { path: '/admin/disputes', icon: ShieldAlert, label: 'Disputes' },
     { path: '/admin/audit-logs', icon: Activity, label: 'Audit Logs' },
     { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
     { path: '/admin/news', icon: Newspaper, label: 'News Articles' },

@@ -9,6 +9,7 @@ import {
     BadgeCheck,
     CalendarPlus,
     Wrench,
+    MessageSquareWarning,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { verificationApi } from '../../api/verificationApi';
@@ -20,6 +21,7 @@ const navItems = [
     { path: '/vendor/verify',      icon: BadgeCheck,   label: 'Verify Requests', badge: 'verify'    },
     { path: '/vendor/extensions',  icon: CalendarPlus, label: 'Extensions',      badge: 'extension' },
     { path: '/vendor/claims',      icon: Wrench,       label: 'Repair Claims',   badge: 'claims'    },
+    { path: '/vendor/disputes',    icon: MessageSquareWarning, label: 'Disputes', badge: 'none'     },
     { path: '/vendor/settings',    icon: Settings,     label: 'Settings'                            },
 ];
 

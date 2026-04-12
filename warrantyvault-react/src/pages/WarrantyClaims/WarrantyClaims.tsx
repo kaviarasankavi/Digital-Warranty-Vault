@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import {
     Wrench, MapPin, Calendar, Clock, CheckCircle, XCircle,
     AlertTriangle, ChevronDown, ChevronUp, Send, RefreshCw,
-    Phone, FileText, Package, User, Info,
+    Phone, FileText, Package, User, Info, MessageSquareWarning,
 } from 'lucide-react';
 import { productApi, Product } from '../../api/productApi';
 import { warrantyClaimApi, WarrantyClaim, ClaimLocation, ClaimStatus } from '../../api/warrantyClaimApi';
+import { disputesApi } from '../../api/disputesApi';
 import './WarrantyClaims.css';
 
 const fmtDate = (d: string | null | undefined) =>
@@ -37,6 +38,10 @@ export default function WarrantyClaims() {
     const [formMap,    setFormMap]    = useState<Record<number, ClaimForm>>({});
     const [submitting, setSubmitting] = useState<number | null>(null);
     const [feedback,   setFeedback]   = useState<Record<number, { ok: boolean; text: string }>>({});
+
+    const [escalateClaimId, setEscalateClaimId] = useState<string | null>(null);
+    const [escalateMsg, setEscalateMsg] = useState('');
+    const [escalating, setEscalating] = useState(false);
 
     const loadData = useCallback(async (silent = false) => {
         if (!silent) setLoading(true); else setRefreshing(true);
@@ -86,6 +91,23 @@ export default function WarrantyClaims() {
         } catch (err: any) {
             setFeedback(m => ({ ...m, [p.id]: { ok: false, text: err?.response?.data?.message ?? 'Submission failed.' } }));
         } finally { setSubmitting(null); }
+    };
+
+    const submitEscalation = async () => {
+        if (!escalateClaimId || !escalateMsg.trim()) return;
+        setEscalating(true);
+        try {
+            await disputesApi.openDispute(escalateClaimId, 'claim', escalateMsg);
+            setEscalateClaimId(null);
+            setEscalateMsg('');
+            loadData(true);
+        } catch (e: any) {
+            // Error handling ignored for brevity or use toast if available
+            console.error(e);
+            alert(e?.response?.data?.message || 'Failed to escalate');
+        } finally {
+            setEscalating(false);
+        }
     };
 
     const stats = {
@@ -174,10 +196,24 @@ export default function WarrantyClaims() {
 
                                         {/* Rejection note */}
                                         {claim?.status === 'rejected' && (
-                                            <div className="wc-note wc-note-bad">
-                                                <XCircle size={13} />
-                                                Claim rejected{claim.rejectionReason ? `: "${claim.rejectionReason}"` : '.'}
-                                                {' '}You may re-file a new claim.
+                                            <div className="wc-note wc-note-bad" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                <div>
+                                                    <XCircle size={13} />
+                                                    Claim rejected{claim.rejectionReason ? `: "${claim.rejectionReason}"` : '.'}
+                                                    {' '}You may re-file a new claim.
+                                                </div>
+                                                {claim.isEscalated ? (
+                                                    <div style={{ color: '#b45309', fontWeight: 600, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                        <MessageSquareWarning size={13} /> UNDER ADMIN REVIEW
+                                                    </div>
+                                                ) : (
+                                                    <button 
+                                                        onClick={() => { setEscalateClaimId(claim._id); setEscalateMsg(''); }}
+                                                        style={{ alignSelf: 'flex-start', background: '#fef3c7', border: '1px solid #fde68a', color: '#b45309', padding: '0.25rem 0.75rem', borderRadius: '0.5rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                                    >
+                                                        <MessageSquareWarning size={13} /> Escalate to Admin
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
 
@@ -307,6 +343,32 @@ export default function WarrantyClaims() {
                                 ))}
                             </div>
                         </>
+                    )}
+
+                    {escalateClaimId && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(4px)' }}>
+                            <div style={{ background: '#fff', borderRadius: '1rem', width: '90%', maxWidth: '500px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <MessageSquareWarning size={20} color="#f59e0b" /> Escalate to Admin
+                                </h3>
+                                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                                    If you believe your claim was unfairly rejected, you can request an Admin to review your case and arbitrate the dispute.
+                                </p>
+                                <textarea 
+                                    rows={4}
+                                    className="wc-textarea" 
+                                    placeholder="Please explain why this should be approved..."
+                                    value={escalateMsg}
+                                    onChange={e => setEscalateMsg(e.target.value)}
+                                />
+                                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                                    <button onClick={() => setEscalateClaimId(null)} style={{ background: 'transparent', border: 'none', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                                    <button onClick={submitEscalation} disabled={escalating || !escalateMsg.trim()} style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer', opacity: (escalating || !escalateMsg.trim()) ? 0.5 : 1 }}>
+                                        {escalating ? 'Escalating...' : 'Submit Escalation'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </>
             )}
