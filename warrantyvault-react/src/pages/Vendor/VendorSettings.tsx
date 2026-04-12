@@ -4,7 +4,7 @@ import {
     CheckCircle, XCircle, Loader2, ShieldCheck, Globe,
     Phone, Mail, MapPin, Hash, FileText, RefreshCw,
 } from 'lucide-react';
-import { vendorSettingsApi, VendorSettings, BusinessDetails, NotificationPrefs } from '../../api/vendorSettingsApi';
+import { vendorSettingsApi, VendorSettingsData, BusinessDetails, NotificationPrefs } from '../../api/vendorSettingsApi';
 import { useAuthStore } from '../../store/authStore';
 import './VendorSettings.css';
 
@@ -15,7 +15,7 @@ interface Toast { ok: boolean; text: string }
 export default function VendorSettings() {
     const { user, updateUser } = useAuthStore() as any;
     const [tab,      setTab]      = useState<Tab>('profile');
-    const [settings, setSettings] = useState<VendorSettings | null>(null);
+    const [settings, setSettings] = useState<VendorSettingsData | null>(null);
     const [loading,  setLoading]  = useState(true);
     const [toast,    setToast]    = useState<Toast | null>(null);
 

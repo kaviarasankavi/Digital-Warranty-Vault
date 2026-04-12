@@ -22,7 +22,7 @@ export interface BusinessDetails {
     description:  string;
 }
 
-export interface VendorSettings {
+export interface VendorSettingsData {
     name:          string;
     email:         string;
     displayName:   string;
@@ -33,7 +33,7 @@ export interface VendorSettings {
 }
 
 export const vendorSettingsApi = {
-    get: async (): Promise<VendorSettings> => {
+    get: async (): Promise<VendorSettingsData> => {
         const res = await axios.get('/vendor/settings');
         return res.data.data;
     },
