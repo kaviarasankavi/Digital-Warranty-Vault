@@ -47,7 +47,7 @@ const locationSchema = new Schema<IClaimLocation>(
 
 const claimSchema = new Schema<IWarrantyClaim>(
     {
-        claimNumber:       { type: String, required: true, unique: true },
+        claimNumber:       { type: String, required: true, unique: true, default: generateClaimNumber },
         productId:         { type: Number, required: true },
         productName:       { type: String, required: true },
         brand:             { type: String, required: true },
@@ -74,18 +74,11 @@ const claimSchema = new Schema<IWarrantyClaim>(
 
 claimSchema.index({ userId: 1 });
 claimSchema.index({ vendorEmail: 1, status: 1 });
-claimSchema.index({ claimNumber: 1 }, { unique: true });
 
 function generateClaimNumber(): string {
     const ts  = Date.now().toString(36).toUpperCase();
     const rnd = Math.random().toString(36).substring(2, 5).toUpperCase();
     return `CLM-${ts}-${rnd}`;
 }
-
-// Pre-validate hook assigns claimNumber
-claimSchema.pre('validate', function (next) {
-    if (!this.claimNumber) this.claimNumber = generateClaimNumber();
-    next();
-});
 
 export const WarrantyClaim = mongoose.model<IWarrantyClaim>('WarrantyClaim', claimSchema);

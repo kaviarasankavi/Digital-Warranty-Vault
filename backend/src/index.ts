@@ -17,6 +17,7 @@ import { initMySQL } from './config/database-mysql';
 import verificationRoutes from './routes/verificationRoutes';
 import warrantyExtensionRoutes from './routes/warrantyExtensionRoutes';
 import warrantyClaimRoutes from './routes/warrantyClaimRoutes';
+import certificateRoutes from './routes/certificateRoutes';
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/verify', verificationRoutes);
 app.use('/api/warranty-extension', warrantyExtensionRoutes);
 app.use('/api/claims', warrantyClaimRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────
 app.use((req, res) => {

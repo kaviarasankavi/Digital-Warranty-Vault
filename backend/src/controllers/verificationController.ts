@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ValidationError, AuthorizationError, NotFoundError } from '../utils/errors';
 import { VerificationRequest } from '../models/VerificationRequest';
+import { issueCertificate } from './certificateController';
 
 // ── Brand → Vendor email map ──────────────────────────────────────────────────
 const BRAND_MAP: Record<string, string> = {
@@ -147,6 +148,21 @@ export const verifyRequest = asyncHandler(
         request.verifiedAt = new Date();
         request.vendorNote = req.body.note ?? '';
         await request.save();
+
+        // Auto-issue a certificate
+        issueCertificate({
+            verificationRequestId: String(request._id),
+            productId:    request.productId,
+            productName:  request.productName,
+            brand:        request.brand,
+            serialNumber: request.serialNumber,
+            userId:       request.userId,
+            userName:     request.userName,
+            userEmail:    request.userEmail,
+            vendorEmail:  request.vendorEmail,
+            vendorNote:   request.vendorNote,
+            verifiedAt:   request.verifiedAt!,
+        });
 
         res.json({ success: true, message: 'Product verified successfully.', data: request });
     }
