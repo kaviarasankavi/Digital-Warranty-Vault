@@ -44,20 +44,6 @@ export default function Login() {
         return Object.keys(newErrors).length === 0;
     };
 
-    // Demo credentials for frontend-only development (no backend needed)
-    const DEMO_USER = {
-        email: 'admin@vault.com',
-        password: 'admin123',
-        user: {
-            id: 'demo-001',
-            email: 'admin@vault.com',
-            name: 'Vault Admin',
-            role: 'admin' as const,
-            avatar: undefined,
-            createdAt: new Date().toISOString(),
-        },
-        token: 'demo-jwt-token',
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -86,21 +72,15 @@ export default function Login() {
                     },
                     token
                 );
-                navigate('/dashboard');
+                // Route by role
+                if (user.role === 'vendor') {
+                    navigate('/vendor/dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
             }
         } catch (error: any) {
-            // If backend is unreachable and demo credentials are used, fall back to demo mode
             const isNetworkError = !error.response;
-            const isDemoCredentials =
-                formData.email === DEMO_USER.email &&
-                formData.password === DEMO_USER.password;
-
-            if (isNetworkError && isDemoCredentials) {
-                login(DEMO_USER.user, DEMO_USER.token);
-                navigate('/dashboard');
-                return;
-            }
-
             const message =
                 error.response?.data?.message ||
                 (isNetworkError
@@ -160,19 +140,6 @@ export default function Login() {
                         </div>
                     )}
 
-                    {/* Demo credentials hint */}
-                    <div className="demo-hint" onClick={() => {
-                        setFormData({ email: 'admin@vault.com', password: 'admin123' });
-                        setErrors({});
-                        setApiError(null);
-                    }}>
-                        <span className="demo-hint-icon">🔑</span>
-                        <div>
-                            <strong>Demo Access</strong>
-                            <span>admin@vault.com · admin123</span>
-                        </div>
-                        <span className="demo-hint-fill">Click to fill</span>
-                    </div>
 
                     <form onSubmit={handleSubmit} className="login-form">
                         <Input

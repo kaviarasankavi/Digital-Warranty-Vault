@@ -32,6 +32,12 @@ const AdminNews = lazy(() => import('./pages/Admin/AdminNews'));
 const AdminAuditLogs = lazy(() => import('./pages/Admin/AdminAuditLogs'));
 const AdminUsers = lazy(() => import('./pages/Admin/AdminUsers'));
 
+// ── Vendor pages (lazy) ───────────────────────────────────────────────────────
+const VendorLayout    = lazy(() => import('./pages/Vendor/VendorLayout'));
+const VendorDashboard = lazy(() => import('./pages/Vendor/VendorDashboard'));
+const VendorProducts  = lazy(() => import('./pages/Vendor/VendorProducts'));
+const VendorVerify    = lazy(() => import('./pages/Vendor/VendorVerify'));
+
 const queryClient = new QueryClient({
     defaultOptions: { queries: { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false } },
 });
@@ -129,6 +135,16 @@ function App() {
                                 <Route path="news" element={<AdminNews />} />
                                 <Route path="users" element={<AdminUsers />} />
                                 <Route path="settings" element={<AdminSettings />} />
+                            </Route>
+                        </Route>
+
+                        {/* ── Vendor protected routes ── */}
+                        <Route element={<ProtectedRoute />}>
+                            <Route element={<VendorLayout />}>
+                                <Route path="/vendor" element={<Navigate to="/vendor/dashboard" replace />} />
+                                <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+                                <Route path="/vendor/products"  element={<VendorProducts />} />
+                                <Route path="/vendor/verify"    element={<VendorVerify />} />
                             </Route>
                         </Route>
 
