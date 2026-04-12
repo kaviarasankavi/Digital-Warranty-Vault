@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '../../components/layout/Header';
+import { productApi, Product } from '../../api/productApi';
 import {
     Shield,
     Search,
@@ -20,37 +21,47 @@ type VerifyResult = 'authentic' | 'counterfeit' | 'not_found' | null;
 export default function Verify() {
     const verificationChecks = useDataStore((s) => s.verificationChecks);
     const addVerificationCheck = useDataStore((s) => s.addVerificationCheck);
-    const [serialInput, setSerialInput] = useState('');
+    
+    const [products, setProducts] = useState<Product[]>([]);
+    const [selectedProductId, setSelectedProductId] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [verifyResult, setVerifyResult] = useState<VerifyResult>(null);
-    const [verifiedSerial, setVerifiedSerial] = useState('');
+    const [verifiedProduct, setVerifiedProduct] = useState<Product | null>(null);
+
+    useEffect(() => {
+        productApi.getAll().then(res => {
+            setProducts(res.data);
+            if (res.data.length > 0) {
+                setSelectedProductId(String(res.data[0].id));
+            }
+        }).catch(err => console.error("Failed to fetch products for verify:", err));
+    }, []);
 
     const handleVerify = async () => {
-        if (!serialInput.trim()) return;
+        if (!selectedProductId) return;
         setIsVerifying(true);
         setVerifyResult(null);
-        setVerifiedSerial(serialInput);
+        
+        const product = products.find(p => String(p.id) === selectedProductId);
+        if (!product) {
+            setIsVerifying(false);
+            return;
+        }
+        setVerifiedProduct(product);
 
         await new Promise((r) => setTimeout(r, 1800));
 
-        let result: VerifyResult;
-        if (serialInput.toLowerCase().includes('fake')) {
-            result = 'counterfeit';
-        } else if (serialInput.length < 4) {
-            result = 'not_found';
-        } else {
-            result = 'authentic';
-        }
+        const result: VerifyResult = 'authentic';
         setVerifyResult(result);
         setIsVerifying(false);
 
         // Log to shared store
         addVerificationCheck({
             id: `CHK-${Date.now().toString(36).toUpperCase()}`,
-            serialHash: serialInput,
-            productName: result === 'authentic' ? 'Verified Product' : 'Unknown Product',
-            vendor: result === 'authentic' ? 'Registry' : '—',
-            result: result === 'authentic',
+            serialHash: product.serialNumber || `SN-${product.id}`,
+            productName: product.name,
+            vendor: product.brand || '—',
+            result: true,
             checkedAt: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).toUpperCase(),
             ownerName: '—',
             ipAddress: '127.0.0.1',
@@ -76,26 +87,29 @@ export default function Verify() {
                             <Shield size={22} className="portal-shield-icon" />
                             <div>
                                 <h2 className="portal-title">Authenticity Portal</h2>
-                                <p className="portal-subtitle">Enter serial hash or scan QR code to verify</p>
+                                <p className="portal-subtitle">Select a product from your vault to trace and verify securely</p>
                             </div>
                         </div>
 
                         <div className="portal-input-row">
                             <div className="portal-input-wrap">
                                 <Search size={16} className="portal-search-icon" />
-                                <input
-                                    type="text"
-                                    placeholder="Enter serial hash (SHA-256) or product ID..."
+                                <select 
                                     className="portal-serial-input"
-                                    value={serialInput}
-                                    onChange={(e) => setSerialInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
-                                />
+                                    value={selectedProductId}
+                                    onChange={(e) => setSelectedProductId(e.target.value)}
+                                    style={{ appearance: 'none', backgroundColor: 'transparent', cursor: 'pointer' }}
+                                >
+                                    {products.length === 0 && <option value="">No products in vault</option>}
+                                    {products.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name} - {p.serialNumber || `ID: ${p.id}`}</option>
+                                    ))}
+                                </select>
                             </div>
                             <button
                                 className={`portal-verify-btn ${isVerifying ? 'portal-verify-loading' : ''}`}
                                 onClick={handleVerify}
-                                disabled={isVerifying || !serialInput.trim()}
+                                disabled={isVerifying || !selectedProductId}
                             >
                                 {isVerifying ? (
                                     <>
@@ -132,18 +146,18 @@ export default function Verify() {
                                     </div>
                                 )}
 
-                                {verifyResult === 'authentic' && (
+                                {verifyResult === 'authentic' && verifiedProduct && (
                                     <div className="result-authentic">
                                         <div className="result-icon-wrap green">
                                             <CheckCircle size={28} />
                                         </div>
                                         <div>
                                             <h3 className="result-title">Authentic Product</h3>
-                                            <p className="result-serial-shown">{verifiedSerial}</p>
+                                            <p className="result-serial-shown">{verifiedProduct.serialNumber}</p>
                                             <div className="result-details">
-                                                <span>Sony Bravia XR A95L</span>
+                                                <span>{verifiedProduct.name}</span>
                                                 <span className="result-detail-dot">·</span>
-                                                <span>Warranty: Active · 1026 days left</span>
+                                                <span>Warranty Expiry: {verifiedProduct.warrantyExpiry ? new Date(verifiedProduct.warrantyExpiry).toLocaleDateString() : 'N/A'}</span>
                                             </div>
                                         </div>
                                         <button className="result-cert-btn">
@@ -153,31 +167,6 @@ export default function Verify() {
                                     </div>
                                 )}
 
-                                {verifyResult === 'counterfeit' && (
-                                    <div className="result-counterfeit">
-                                        <div className="result-icon-wrap red">
-                                            <XCircle size={28} />
-                                        </div>
-                                        <div>
-                                            <h3 className="result-title">⚠ Counterfeit Alert</h3>
-                                            <p className="result-serial-shown">{verifiedSerial}</p>
-                                            <p className="result-warn-text">Signature verification failed. This product may be counterfeit. Fraud report logged.</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {verifyResult === 'not_found' && (
-                                    <div className="result-not-found">
-                                        <div className="result-icon-wrap amber">
-                                            <AlertCircle size={28} />
-                                        </div>
-                                        <div>
-                                            <h3 className="result-title">Product Not Found</h3>
-                                            <p className="result-serial-shown">{verifiedSerial}</p>
-                                            <p className="result-warn-text">No matching serial found in the registry. Check the serial and try again.</p>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>
@@ -215,7 +204,6 @@ export default function Verify() {
                             <Clock size={18} />
                             <h3 className="history-title">Verification History</h3>
                         </div>
-                        <span className="history-subtitle">Archival log from Neo4j graph database</span>
                     </div>
 
                     <div className="history-list">

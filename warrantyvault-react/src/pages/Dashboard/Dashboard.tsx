@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
     CheckCircle,
-    AlertTriangle,
     Plus,
     FileText,
     Headphones,
@@ -11,95 +10,84 @@ import {
     Lock,
     ArrowRight,
     Shield,
-    Zap,
-    Calendar,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '../../components/layout/Header';
+import { analyticsApi, MonthlySpendingItem } from '../../api/analyticsApi';
+import { productApi, Product } from '../../api/productApi';
 import '../../styles/userDashboard.css';
 
-// Mock data
-const mockBarData = [
-    { month: 'JAN', value: 1200 },
-    { month: 'FEB', value: 1800 },
-    { month: 'MAR', value: 2400 },
-    { month: 'APR', value: 2800 },
-    { month: 'MAY', value: 3200 },
-    { month: 'JUN', value: 4100 },
-    { month: 'JUL', value: 3600 },
-    { month: 'AUG', value: 2200 },
-];
-
-const mockRecentActivity = [
-    {
-        id: '1',
-        product: 'MacBook Pro M2',
-        image: '💻',
-        status: 'Expiring',
-        statusType: 'warning',
-        subtitle: 'Apple Care+ • Serial #A123...',
-        time: '30 days left',
-    },
-    {
-        id: '2',
-        product: 'Sony WH-1000XM5',
-        image: '🎧',
-        status: 'Approved',
-        statusType: 'success',
-        subtitle: 'Accidental Damage Claim',
-        time: 'Resolved yesterday',
-    },
-    {
-        id: '3',
-        product: 'DJI Mini 3 Pro',
-        image: '🚁',
-        status: 'New',
-        statusType: 'info',
-        subtitle: 'Standard Warranty Registered',
-        time: 'Added 2 hrs ago',
-    },
-];
-
 export default function Dashboard() {
+    const navigate = useNavigate();
     const [animatedCount, setAnimatedCount] = useState(0);
     const [animatedValue, setAnimatedValue] = useState(0);
-    const maxBarValue = Math.max(...mockBarData.map((d) => d.value));
+    
+    // Dynamic State
+    const [monthlyData, setMonthlyData] = useState<MonthlySpendingItem[]>([]);
+    const [monthlySummary, setMonthlySummary] = useState<any>({});
+    const [categorySummary, setCategorySummary] = useState<any>({});
+    const [recentProducts, setRecentProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const maxBarValue = Math.max(...monthlyData.map((d) => d.totalSpend), 1);
 
     useEffect(() => {
-        // Animate warranty count
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                const [monthlyRes, categoryRes, productsRes] = await Promise.all([
+                    analyticsApi.getMonthlySpending(),
+                    analyticsApi.getCategorySummary(),
+                    productApi.getAll({ limit: 5, sortBy: 'createdAt', sortOrder: 'desc' })
+                ]);
+                
+                setMonthlyData(monthlyRes.data);
+                setMonthlySummary(monthlyRes.summary);
+                setCategorySummary(categoryRes.summary);
+                setRecentProducts(productsRes.data);
+                
+                // Animate counts after data is fetched
+                animateStats(categoryRes.summary.totalProducts || 0, categoryRes.summary.totalSpend || 0);
+            } catch (err) {
+                console.error("Failed to load dashboard data", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDashboardData();
+    }, []);
+
+    const animateStats = (targetCount: number, targetValue: number) => {
+        // Animate product count
         const countDuration = 1200;
         const countSteps = 50;
-        const countStepDuration = countDuration / countSteps;
-        const countTarget = 24;
         let countStep = 0;
-
         const countInterval = setInterval(() => {
             countStep++;
             const progress = countStep / countSteps;
             const eased = 1 - Math.pow(1 - progress, 3);
-            setAnimatedCount(Math.floor(countTarget * eased));
-            if (countStep >= countSteps) clearInterval(countInterval);
-        }, countStepDuration);
+            setAnimatedCount(Math.floor(targetCount * eased));
+            if (countStep >= countSteps) {
+                setAnimatedCount(targetCount);
+                clearInterval(countInterval);
+            }
+        }, countDuration / countSteps);
 
         // Animate value
         const valueDuration = 1500;
         const valueSteps = 60;
-        const valueStepDuration = valueDuration / valueSteps;
-        const valueTarget = 34250;
         let valueStep = 0;
-
         const valueInterval = setInterval(() => {
             valueStep++;
             const progress = valueStep / valueSteps;
             const eased = 1 - Math.pow(1 - progress, 3);
-            setAnimatedValue(Math.floor(valueTarget * eased));
-            if (valueStep >= valueSteps) clearInterval(valueInterval);
-        }, valueStepDuration);
-
-        return () => {
-            clearInterval(countInterval);
-            clearInterval(valueInterval);
-        };
-    }, []);
+            setAnimatedValue(Math.floor(targetValue * eased));
+            if (valueStep >= valueSteps) {
+                setAnimatedValue(targetValue);
+                clearInterval(valueInterval);
+            }
+        }, valueDuration / valueSteps);
+    };
 
     return (
         <div className="user-dashboard-main">
@@ -108,7 +96,7 @@ export default function Dashboard() {
             <div className="user-dashboard-content">
                 {/* Bento Grid */}
                 <div className="user-bento-grid">
-                    {/* Active Warranties - Large Card */}
+                    {/* Products - Large Card */}
                     <div className="user-bento-card card-medium card-primary user-animate-in user-animate-in-1">
                         <div className="user-stat-card">
                             <div className="user-stat-header">
@@ -117,23 +105,23 @@ export default function Dashboard() {
                                 </div>
                                 <div className="user-stat-trend trend-up" style={{ background: 'rgba(255,255,255,0.15)', color: 'white' }}>
                                     <TrendingUp size={12} />
-                                    <span>+12%</span>
+                                    <span>Active</span>
                                 </div>
                             </div>
                             <div className="user-stat-value">{animatedCount}</div>
-                            <div className="user-stat-label">Active Warranties</div>
+                            <div className="user-stat-label">Total Products</div>
                             <div className="user-stat-progress">
-                                <div className="user-stat-progress-fill" style={{ width: '75%' }} />
+                                <div className="user-stat-progress-fill" style={{ width: '100%' }} />
                             </div>
                         </div>
                     </div>
 
-                    {/* Coverage Timeline Chart */}
+                    {/* Spending Timeline Chart */}
                     <div className="user-bento-card card-wide user-chart-card user-animate-in user-animate-in-2">
                         <div className="user-chart-header">
                             <div>
-                                <h3 className="user-chart-title">Coverage Timeline</h3>
-                                <p className="user-chart-subtitle">Asset protection value over time</p>
+                                <h3 className="user-chart-title">Spending Timeline</h3>
+                                <p className="user-chart-subtitle">Asset investment over time</p>
                             </div>
                             <button className="user-chart-filter">
                                 This Year
@@ -142,22 +130,25 @@ export default function Dashboard() {
                         </div>
                         <div className="user-chart-body">
                             <div className="user-bar-chart">
-                                {mockBarData.map((bar, index) => (
-                                    <div key={bar.month} className="user-bar-column">
+                                {monthlyData.map((bar, index) => (
+                                    <div key={bar.label} className="user-bar-column">
                                         <div className="user-bar-wrapper">
                                             <div className="user-bar-tooltip">
-                                                ${bar.value.toLocaleString()}
+                                                ${bar.totalSpend.toLocaleString()}
                                             </div>
                                             <div
-                                                className={`user-bar ${index === 5 ? 'bar-highlight' : index >= 3 && index <= 6 ? 'bar-active' : ''}`}
+                                                className={`user-bar ${index === monthlyData.length - 1 ? 'bar-highlight' : 'bar-active'}`}
                                                 style={{
-                                                    height: `${(bar.value / maxBarValue) * 100}%`,
+                                                    height: `${(bar.totalSpend / maxBarValue) * 100}%`,
                                                 }}
                                             />
                                         </div>
-                                        <span className="user-bar-label">{bar.month}</span>
+                                        <span className="user-bar-label" style={{fontSize: '0.65rem'}}>{bar.label.split(' ')[0]}</span>
                                     </div>
                                 ))}
+                                {monthlyData.length === 0 && !loading && (
+                                    <div style={{width: '100%', textAlign: 'center', color: '#888'}}>No data available</div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -168,17 +159,11 @@ export default function Dashboard() {
                             Quick Actions
                         </h3>
                         <div className="user-quick-actions">
-                            <button className="user-quick-action-btn">
+                            <button className="user-quick-action-btn" onClick={() => navigate('/products')}>
                                 <div className="user-qa-icon icon-add">
                                     <Plus size={20} />
                                 </div>
                                 <span>Add Product</span>
-                            </button>
-                            <button className="user-quick-action-btn">
-                                <div className="user-qa-icon icon-claim">
-                                    <AlertTriangle size={20} />
-                                </div>
-                                <span>File Claim</span>
                             </button>
                             <button className="user-quick-action-btn">
                                 <div className="user-qa-icon icon-export">
@@ -195,40 +180,6 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Expiring Soon */}
-                    <div className="user-bento-card card-medium user-expiring-card user-animate-in user-animate-in-4">
-                        <div className="user-expiring-left">
-                            <div className="user-expiring-icon">
-                                <Calendar size={22} />
-                            </div>
-                            <div className="user-expiring-info">
-                                <span className="user-expiring-label">Upcoming</span>
-                                <div className="user-expiring-count">3</div>
-                                <span className="user-expiring-text">Expiring Soon</span>
-                            </div>
-                        </div>
-                        <div className="user-expiring-avatars">
-                            <div className="user-avatar-stack">
-                                <span className="user-mini-avatar" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>📱</span>
-                                <span className="user-mini-avatar" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>⌚</span>
-                                <span className="user-mini-avatar" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>🖥️</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Claims Status */}
-                    <div className="user-bento-card card-small user-animate-in user-animate-in-5">
-                        <div className="user-stat-card">
-                            <div className="user-stat-header">
-                                <div className="user-stat-icon icon-coral">
-                                    <Zap size={20} />
-                                </div>
-                            </div>
-                            <div className="user-stat-value" style={{ fontSize: '2rem' }}>2</div>
-                            <div className="user-stat-label">Active Claims</div>
-                        </div>
-                    </div>
-
                     {/* Products Count */}
                     <div className="user-bento-card card-small user-animate-in user-animate-in-5" style={{ animationDelay: '0.3s' }}>
                         <div className="user-stat-card">
@@ -237,12 +188,12 @@ export default function Dashboard() {
                                     <CheckCircle size={20} />
                                 </div>
                             </div>
-                            <div className="user-stat-value" style={{ fontSize: '2rem' }}>18</div>
+                            <div className="user-stat-value" style={{ fontSize: '2rem' }}>{categorySummary.totalProducts || 0}</div>
                             <div className="user-stat-label">Products</div>
                         </div>
                     </div>
 
-                    {/* Coverage Rate */}
+                    {/* Categories Stats */}
                     <div className="user-bento-card card-small user-animate-in user-animate-in-5" style={{ animationDelay: '0.35s' }}>
                         <div className="user-stat-card">
                             <div className="user-stat-header">
@@ -250,8 +201,8 @@ export default function Dashboard() {
                                     <TrendingUp size={20} />
                                 </div>
                             </div>
-                            <div className="user-stat-value" style={{ fontSize: '2rem' }}>92%</div>
-                            <div className="user-stat-label">Coverage</div>
+                            <div className="user-stat-value" style={{ fontSize: '2rem' }}>{categorySummary.totalCategories || 0}</div>
+                            <div className="user-stat-label">Categories</div>
                         </div>
                     </div>
 
@@ -263,7 +214,7 @@ export default function Dashboard() {
                                     <Shield size={20} />
                                 </div>
                             </div>
-                            <div className="user-stat-value" style={{ fontSize: '2rem' }}>15</div>
+                            <div className="user-stat-value" style={{ fontSize: '2rem' }}>{categorySummary.totalProducts || 0}</div>
                             <div className="user-stat-label">Verified</div>
                         </div>
                     </div>
@@ -273,32 +224,34 @@ export default function Dashboard() {
                 <div className="user-activity-section user-animate-in" style={{ animationDelay: '0.45s', opacity: 0 }}>
                     <div className="user-section-header">
                         <h3 className="user-section-title">Recent Activity</h3>
-                        <button className="user-view-all-btn">
+                        <button className="user-view-all-btn" onClick={() => navigate('/products')}>
                             View All
                             <ArrowRight size={14} />
                         </button>
                     </div>
                     <div className="user-activity-grid">
-                        {mockRecentActivity.map((item, index) => (
+                        {recentProducts.map((item, index) => (
                             <div 
                                 key={item.id} 
                                 className="user-activity-card user-animate-in"
                                 style={{ animationDelay: `${0.5 + index * 0.05}s`, opacity: 0 }}
                             >
                                 <div className="user-activity-image">
-                                    {item.image}
+                                    {item.category === 'Electronics' ? '📱' :
+                                     item.category === 'Computing' ? '💻' :
+                                     item.category === 'Audio' ? '🎧' : '📦'}
                                 </div>
                                 <div className="user-activity-content">
                                     <div className="user-activity-top">
-                                        <span className="user-activity-name">{item.product}</span>
-                                        <span className={`user-activity-badge badge-${item.statusType}`}>
-                                            {item.status}
+                                        <span className="user-activity-name">{item.name}</span>
+                                        <span className={`user-activity-badge badge-info`}>
+                                            New
                                         </span>
                                     </div>
-                                    <p className="user-activity-subtitle">{item.subtitle}</p>
+                                    <p className="user-activity-subtitle">{item.brand} • {item.model}</p>
                                     <div className="user-activity-time">
                                         <Clock size={12} />
-                                        <span>{item.time}</span>
+                                        <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                                     </div>
                                 </div>
                             </div>
@@ -313,8 +266,8 @@ export default function Dashboard() {
                             <Lock size={24} />
                         </div>
                         <div className="user-total-value-info">
-                            <h3>Total Value Protected</h3>
-                            <p>Across 24 registered devices and appliances</p>
+                            <h3>Total Asset Value</h3>
+                            <p>Across {categorySummary.totalProducts || 0} registered devices and appliances</p>
                         </div>
                     </div>
                     <div className="user-total-value-amount">

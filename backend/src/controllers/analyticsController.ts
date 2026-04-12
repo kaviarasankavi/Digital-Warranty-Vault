@@ -5,15 +5,81 @@ import { MongoWarranty } from '../models/MongoWarranty';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AuthenticationError } from '../utils/errors';
 import { logger } from '../utils/logger';
-import { seedMongoData } from '../scripts/seedMongo';
+import { getSQL } from '../config/database-postgres';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper: ensure sample data exists for the user (lazy seed on first request)
+// Helper: ensure MongoDB is accurately synced with Postgres
 // ─────────────────────────────────────────────────────────────────────────────
-async function ensureSeeded(userId: string): Promise<void> {
-    const count = await MongoProduct.countDocuments({ userId });
-    if (count === 0) {
-        await seedMongoData(userId);
+async function ensureSynced(userId: string): Promise<void> {
+    try {
+        const sql = getSQL();
+        const pgCountResult = await sql`SELECT COUNT(*) as total FROM products WHERE "userId" = ${userId}` as any[];
+        const pgCount = parseInt(pgCountResult[0]?.total || '0', 10);
+        
+        const mongoCount = await MongoProduct.countDocuments({ userId });
+        const mongoWarrantyCount = await MongoWarranty.countDocuments({ userId });
+        
+        // If counts mismatch (either products don't match, or warranties don't match products), resync entirely
+        if (mongoCount !== pgCount || mongoWarrantyCount !== mongoCount) {
+            logger.info(`Sync mismatch for user ${userId}: PG=${pgCount}, Mongo=${mongoCount}, MongoWarranties=${mongoWarrantyCount}. Resyncing...`);
+            
+            // Wipe MongoProducts and MongoWarranties for this user
+            await MongoProduct.deleteMany({ userId });
+            await MongoWarranty.deleteMany({ userId });
+            
+            // Fetch all Postgres products
+            const products = await sql`SELECT * FROM products WHERE "userId" = ${userId}` as any[];
+            
+            if (products.length > 0) {
+                const mongoDocs = products.map((p: any) => ({
+                    userId: p.userId,
+                    pgId: p.id,
+                    name: p.name,
+                    brand: p.brand || '',
+                    modelName: p.model || '',
+                    serialNumber: p.serialNumber || '',
+                    category: p.category || '',
+                    purchaseDate: p.purchaseDate || new Date(),
+                    purchasePrice: parseFloat(p.purchasePrice?.toString() || '0'),
+                    warrantyExpiry: p.warrantyExpiry || undefined,
+                    notes: p.notes || '',
+                    status: 'active'
+                }));
+                const insertedProducts = await MongoProduct.insertMany(mongoDocs);
+                
+                // Build MongoWarranty documents from the inserted MongoProduct documents
+                const warrantyDocs = insertedProducts.map((ip) => {
+                    const now = new Date();
+                    let status = 'active';
+                    
+                    if (ip.warrantyExpiry) {
+                        const daysLeft = (new Date(ip.warrantyExpiry).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+                        if (daysLeft < 0) {
+                            status = 'expired';
+                        } else if (daysLeft <= 30) {
+                            status = 'expiring';
+                        }
+                    }
+                    
+                    return {
+                        productId: ip._id,
+                        userId: ip.userId,
+                        warrantyType: 'standard',
+                        status: status,
+                        startDate: ip.purchaseDate || new Date(),
+                        endDate: ip.warrantyExpiry || new Date(now.setFullYear(now.getFullYear() + 1)),
+                        claimCount: 0,
+                        coverageDetails: { parts: true, labor: true, accidentalDamage: false }
+                    };
+                });
+                
+                if (warrantyDocs.length > 0) {
+                    await MongoWarranty.insertMany(warrantyDocs);
+                }
+            }
+        }
+    } catch (e: any) {
+        logger.error(`ensureSynced silently failed for user ${userId}: ${e.message}`, e);
     }
 }
 
@@ -26,7 +92,7 @@ export const getCategorySummary = asyncHandler(async (req: AuthRequest, res: Res
     const userId = req.user?._id?.toString();
     if (!userId) throw new AuthenticationError('Unauthorized');
 
-    await ensureSeeded(userId);
+    await ensureSynced(userId);
 
     const pipeline = [
         // Stage 1: $match — filter to only this user's products
@@ -96,7 +162,7 @@ export const getWarrantyStatus = asyncHandler(async (req: AuthRequest, res: Resp
     const userId = req.user?._id?.toString();
     if (!userId) throw new AuthenticationError('Unauthorized');
 
-    await ensureSeeded(userId);
+    await ensureSynced(userId);
 
     const pipeline = [
         // Stage 1: $match — filter by user, optionally by warranty type
@@ -181,7 +247,7 @@ export const getMonthlySpending = asyncHandler(async (req: AuthRequest, res: Res
     const userId = req.user?._id?.toString();
     if (!userId) throw new AuthenticationError('Unauthorized');
 
-    await ensureSeeded(userId);
+    await ensureSynced(userId);
 
     // Default to last 12 months
     const monthsBack = parseInt(req.query.months as string) || 12;
@@ -266,7 +332,7 @@ export const getBrandAnalytics = asyncHandler(async (req: AuthRequest, res: Resp
     const userId = req.user?._id?.toString();
     if (!userId) throw new AuthenticationError('Unauthorized');
 
-    await ensureSeeded(userId);
+    await ensureSynced(userId);
 
     const pipeline = [
         // Stage 1: $match — filter by user, exclude empty brands
@@ -338,7 +404,7 @@ export const getPriceDistribution = asyncHandler(async (req: AuthRequest, res: R
     const userId = req.user?._id?.toString();
     if (!userId) throw new AuthenticationError('Unauthorized');
 
-    await ensureSeeded(userId);
+    await ensureSynced(userId);
 
     const pipeline = [
         // Stage 1: $match — filter by user, only products with price > 0

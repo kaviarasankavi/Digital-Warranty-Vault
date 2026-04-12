@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IMongoProduct extends Document {
     userId: string;
+    pgId?: number;
     name: string;
     brand: string;
     modelName: string;
@@ -21,6 +22,10 @@ const mongoProductSchema = new Schema<IMongoProduct>(
         userId: {
             type: String,
             required: [true, 'User ID is required'],
+            index: true,
+        },
+        pgId: {
+            type: Number,
             index: true,
         },
         name: {

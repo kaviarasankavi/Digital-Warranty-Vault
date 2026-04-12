@@ -13,13 +13,14 @@ import {
     Bell,
     ChevronRight,
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../store/authStore';
+import { analyticsApi } from '../../../api/analyticsApi';
 import '../../../styles/userDashboard.css';
 
 const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/products', icon: Archive, label: 'My Vault' },
-    { path: '/warranties', icon: ShieldCheck, label: 'Warranties', badge: 3 },
     { path: '/verify', icon: ScanLine, label: 'Verify' },
     { path: '/analytics', icon: BarChart3, label: 'Analytics' },
     { path: '/owners', icon: Users, label: 'Ownership' },
@@ -29,6 +30,15 @@ const navItems = [
 export function Sidebar() {
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
+    const [totalProducts, setTotalProducts] = useState(0);
+
+    useEffect(() => {
+        if (user) {
+            analyticsApi.getCategorySummary()
+                .then(res => setTotalProducts(res.summary?.totalProducts || 0))
+                .catch(err => console.error("Failed to load products count", err));
+        }
+    }, [user]);
 
     const handleLogout = () => {
         logout();
@@ -76,7 +86,7 @@ export function Sidebar() {
                 <div className="user-nav-section">
                     <span className="user-nav-label">Main Menu</span>
                     <ul className="user-nav-list">
-                        {navItems.slice(0, 5).map((item) => (
+                        {navItems.slice(0, 4).map((item) => (
                             <li key={item.path}>
                                 <NavLink
                                     to={item.path}
@@ -86,9 +96,7 @@ export function Sidebar() {
                                 >
                                     <item.icon size={18} className="user-nav-icon" />
                                     <span>{item.label}</span>
-                                    {item.badge && (
-                                        <span className="user-nav-badge">{item.badge}</span>
-                                    )}
+                                    {/* Update index slice since Warranties was removed */}
                                     <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.3 }} />
                                 </NavLink>
                             </li>
@@ -99,7 +107,7 @@ export function Sidebar() {
                 <div className="user-nav-section">
                     <span className="user-nav-label">Account</span>
                     <ul className="user-nav-list">
-                        {navItems.slice(5).map((item) => (
+                        {navItems.slice(4).map((item) => (
                             <li key={item.path}>
                                 <NavLink
                                     to={item.path}
@@ -129,7 +137,7 @@ export function Sidebar() {
                             <Bell size={16} />
                             <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Vault Status</span>
                         </div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem' }}>24</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem' }}>{totalProducts}</div>
                         <div style={{ fontSize: '0.6875rem', opacity: 0.8 }}>Items Protected</div>
                         <div style={{ 
                             height: '4px', 
@@ -139,13 +147,13 @@ export function Sidebar() {
                             overflow: 'hidden'
                         }}>
                             <div style={{ 
-                                width: '75%', 
+                                width: `${Math.min((totalProducts / 500) * 100, 100)}%`, 
                                 height: '100%', 
                                 background: 'white',
                                 borderRadius: '2px'
                             }} />
                         </div>
-                        <div style={{ fontSize: '0.625rem', opacity: 0.6, marginTop: '0.375rem' }}>75% vault capacity</div>
+                        <div style={{ fontSize: '0.625rem', opacity: 0.6, marginTop: '0.375rem' }}>{Math.round(Math.min((totalProducts / 500) * 100, 100))}% vault capacity</div>
                     </div>
                 </div>
             </nav>

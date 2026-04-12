@@ -10,6 +10,8 @@ import {
     ConflictError,
 } from '../utils/errors';
 import { logAuditEvent } from '../services/auditLogService';
+import { MongoProduct } from '../models/MongoProduct';
+import { MongoWarranty } from '../models/MongoWarranty';
 
 // ─── Allowed sort columns (whitelist to prevent SQL injection) ─────────
 const ALLOWED_SORT_COLUMNS: Record<string, string> = {
@@ -274,6 +276,45 @@ export const createProduct = asyncHandler(async (req: AuthRequest, res: Response
         RETURNING *
     ` as any[];
 
+    // ── Sync to MongoDB for analytics pipeline ──
+    try {
+        const newProduct = await MongoProduct.create({
+            userId,
+            pgId: result[0]?.id,
+            name: name.trim(),
+            brand: brand || '',
+            modelName: model || '',
+            serialNumber: serialNumber?.trim() || '',
+            category: category || '',
+            purchaseDate: purchaseDate ? new Date(purchaseDate) : new Date(),
+            purchasePrice: purchasePrice || 0,
+            warrantyExpiry: warrantyExpiry ? new Date(warrantyExpiry) : undefined,
+            notes: notes || '',
+            status: 'active'
+        });
+
+        const now = new Date();
+        let wStatus = 'active';
+        if (warrantyExpiry) {
+            const daysLeft = (new Date(warrantyExpiry).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+            if (daysLeft < 0) wStatus = 'expired';
+            else if (daysLeft <= 30) wStatus = 'expiring';
+        }
+        
+        await MongoWarranty.create({
+            productId: newProduct._id,
+            userId,
+            warrantyType: 'standard',
+            status: wStatus,
+            startDate: purchaseDate ? new Date(purchaseDate) : now,
+            endDate: warrantyExpiry ? new Date(warrantyExpiry) : new Date(now.setFullYear(now.getFullYear() + 1)),
+            claimCount: 0,
+            coverageDetails: { parts: true, labor: true, accidentalDamage: false }
+        });
+    } catch (mongoErr) {
+        logger.error(`MongoDB sync failed for createProduct: ${mongoErr}`);
+    }
+
     logger.info(`Product created: ${name} (user: ${userId})`);
 
     // ── Audit Log ──
@@ -360,6 +401,45 @@ export const updateProduct = asyncHandler(async (req: AuthRequest, res: Response
         RETURNING *
     ` as any[];
 
+    // ── Sync update to MongoDB ──
+    try {
+        const updatedProduct = await MongoProduct.findOneAndUpdate(
+            { pgId: parseInt(id), userId },
+            {
+                name: name.trim(),
+                brand: brand || '',
+                modelName: model || '',
+                serialNumber: serialNumber?.trim() || '',
+                category: category || '',
+                purchaseDate: purchaseDate ? new Date(purchaseDate) : new Date(),
+                purchasePrice: purchasePrice || 0,
+                warrantyExpiry: warrantyExpiry ? new Date(warrantyExpiry) : undefined,
+                notes: notes || ''
+            }
+        );
+        
+        if (updatedProduct) {
+            const now = new Date();
+            let wStatus = 'active';
+            if (warrantyExpiry) {
+                const daysLeft = (new Date(warrantyExpiry).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+                if (daysLeft < 0) wStatus = 'expired';
+                else if (daysLeft <= 30) wStatus = 'expiring';
+            }
+            
+            await MongoWarranty.findOneAndUpdate(
+                { productId: updatedProduct._id },
+                {
+                    status: wStatus,
+                    startDate: purchaseDate ? new Date(purchaseDate) : now,
+                    endDate: warrantyExpiry ? new Date(warrantyExpiry) : new Date(now.setFullYear(now.getFullYear() + 1))
+                }
+            );
+        }
+    } catch (mongoErr) {
+        logger.error(`MongoDB sync failed for updateProduct: ${mongoErr}`);
+    }
+
     logger.info(`Product updated: ${name} (id: ${id})`);
 
     // ── Audit Log ──
@@ -405,6 +485,16 @@ export const deleteProduct = asyncHandler(async (req: AuthRequest, res: Response
     await sql`
         DELETE FROM products WHERE id = ${id} AND "userId" = ${userId}
     `;
+
+    // ── Sync deletion to MongoDB ──
+    try {
+        const deletedProduct = await MongoProduct.findOneAndDelete({ pgId: parseInt(id), userId });
+        if (deletedProduct) {
+            await MongoWarranty.findOneAndDelete({ productId: deletedProduct._id });
+        }
+    } catch (mongoErr) {
+        logger.error(`MongoDB sync failed for deleteProduct: ${mongoErr}`);
+    }
 
     logger.info(`Product deleted: id ${id} (user: ${userId})`);
 

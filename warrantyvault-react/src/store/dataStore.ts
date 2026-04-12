@@ -120,13 +120,7 @@ const seedOwners: Owner[] = [
     { id: 'OWN-005', name: 'William Brandt', description: 'Account suspended pending review of transfer dispute for lot #VAULT-0078.', email: 'w.brandt@private.org', assetsCount: 5, status: 'suspended', lastActivity: '09 OCT 2023', initials: 'WB', colorClass: 'owner-color-red' },
 ];
 
-const seedChecks: VerificationCheck[] = [
-    { id: 'CHK-9921-AA', serialHash: 'a7f3d9c2e1b04...', productName: 'Sony Bravia XR A95L', vendor: 'Sony Electronics', result: true, checkedAt: '12 NOV 2023, 14:23', ownerName: 'Julian S. Arclight', ipAddress: '192.168.1.12' },
-    { id: 'CHK-0482-BB', serialHash: 'b1c4e7a9f2d0...', productName: 'MacBook Pro M3 Max', vendor: 'Apple Inc.', result: true, checkedAt: '10 NOV 2023, 09:44', ownerName: 'Elena Vance-Sterling', ipAddress: '10.0.0.4' },
-    { id: 'CHK-UNKN-09', serialHash: 'f9a2b3c8d1e7...', productName: 'Unknown Product', vendor: '—', result: false, checkedAt: '08 NOV 2023, 17:01', ownerName: '—', ipAddress: '203.0.113.42' },
-    { id: 'CHK-3391-CC', serialHash: 'c3d6f0a8b2e4...', productName: 'DJI Inspire 3', vendor: 'DJI Technology', result: true, checkedAt: '05 NOV 2023, 11:15', ownerName: 'Reina Kasashi', ipAddress: '192.168.0.55' },
-    { id: 'CHK-FRWD-13', serialHash: 'e7a1c9d4f3b2...', productName: 'Suspicious Device', vendor: '—', result: false, checkedAt: '03 NOV 2023, 22:47', ownerName: '—', ipAddress: '185.220.101.8' },
-];
+const seedChecks: VerificationCheck[] = [];
 
 const defaultSystemConfig: SystemConfig = {
     biometricAuth: true,
