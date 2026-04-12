@@ -113,7 +113,7 @@ export function Sidebar() {
                 <div className="user-nav-section">
                     <span className="user-nav-label">Account</span>
                     <ul className="user-nav-list">
-                        {navItems.slice(4).map((item) => (
+                        {navItems.slice(7).map((item) => (
                             <li key={item.path}>
                                 <NavLink
                                     to={item.path}
