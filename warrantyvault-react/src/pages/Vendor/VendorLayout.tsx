@@ -144,10 +144,8 @@ export default function VendorLayout() {
                             <span className="vd-notif-dot" />
                         </button>
 
-                        <a href="/dashboard" className="vd-switch-btn" target="_blank" rel="noreferrer">
-                            <User size={13} />
-                            User View ↗
-                        </a>
+
+
                     </div>
                 </header>
 

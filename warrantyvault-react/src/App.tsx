@@ -36,6 +36,7 @@ const AdminUsers = lazy(() => import('./pages/Admin/AdminUsers'));
 const VendorLayout    = lazy(() => import('./pages/Vendor/VendorLayout'));
 const VendorDashboard = lazy(() => import('./pages/Vendor/VendorDashboard'));
 const VendorProducts    = lazy(() => import('./pages/Vendor/VendorProducts'));
+const VendorHome        = lazy(() => import('./pages/Vendor/VendorHome'));
 const VendorVerify      = lazy(() => import('./pages/Vendor/VendorVerify'));
 const VendorExtensions  = lazy(() => import('./pages/Vendor/VendorExtensions'));
 const VendorClaims      = lazy(() => import('./pages/Vendor/VendorClaims'));
@@ -150,8 +151,8 @@ function App() {
                         {/* ── Vendor protected routes ── */}
                         <Route element={<ProtectedRoute />}>
                             <Route element={<VendorLayout />}>
-                                <Route path="/vendor" element={<Navigate to="/vendor/dashboard" replace />} />
-                                <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+                                <Route path="/vendor"             element={<Navigate to="/vendor/home" replace />} />
+                                <Route path="/vendor/home"        element={<VendorHome />} />
                                 <Route path="/vendor/products"    element={<VendorProducts />} />
                                 <Route path="/vendor/verify"      element={<VendorVerify />} />
                                 <Route path="/vendor/extensions"  element={<VendorExtensions />} />

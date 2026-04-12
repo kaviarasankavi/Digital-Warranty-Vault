@@ -1,0 +1,112 @@
+/* ============================================
+   VendorHome — vendor-specific overview
+   ============================================ */
+
+.vh-page { display:flex; flex-direction:column; gap:1.5rem; animation:vhFade .4s ease; }
+@keyframes vhFade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+/* ── Welcome banner ── */
+.vh-banner {
+    display:flex; align-items:center; justify-content:space-between; gap:1.5rem;
+    background: linear-gradient(135deg, #0d2a24 0%, #0d1f2d 60%, #1a1035 100%);
+    border:1px solid rgba(45,212,191,.12);
+    border-radius:1.5rem; padding:2rem 2.25rem;
+    position:relative; overflow:hidden;
+}
+.vh-banner::before {
+    content:''; position:absolute; top:-40px; right:-40px;
+    width:200px; height:200px; border-radius:50%;
+    background:radial-gradient(circle, rgba(45,212,191,.08) 0%, transparent 70%);
+    pointer-events:none;
+}
+.vh-banner-left { display:flex; flex-direction:column; gap:.5rem; }
+.vh-brand-pill {
+    display:inline-flex; align-items:center;
+    padding:4px 14px; border-radius:9999px;
+    background:rgba(45,212,191,.1); color:#2dd4bf;
+    font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
+    width:fit-content;
+}
+.vh-welcome { font-size:1.75rem; font-weight:800; color:#fff; margin:0; line-height:1.2; }
+.vh-accent  { color:#2dd4bf; }
+.vh-sub     { font-size:.9375rem; color:rgba(255,255,255,.45); margin:0; }
+
+.vh-banner-right { flex-shrink:0; }
+.vh-total-badge {
+    text-align:center; padding:1.25rem 1.75rem;
+    background:rgba(45,212,191,.08); border:1px solid rgba(45,212,191,.15);
+    border-radius:1.25rem; min-width:110px;
+}
+.vh-total-num   { font-size:2.25rem; font-weight:900; color:#2dd4bf; line-height:1; }
+.vh-total-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.35); margin-top:.35rem; }
+
+/* ── Module cards ── */
+.vh-modules { display:grid; grid-template-columns:repeat(3,1fr); gap:1.25rem; }
+
+.vh-module {
+    background:#0d1f2d; border:1px solid rgba(255,255,255,.06);
+    border-radius:1.25rem; padding:1.5rem;
+    display:flex; flex-direction:column; gap:1.125rem;
+    transition:border-color .2s, box-shadow .2s;
+}
+.vh-module:hover {
+    border-color:rgba(45,212,191,.2);
+    box-shadow:0 8px 32px rgba(0,0,0,.25);
+}
+
+.vh-module-hd { display:flex; align-items:flex-start; gap:.875rem; }
+.vh-mod-icon {
+    width:42px; height:42px; border-radius:.875rem;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.vh-icon-teal   { background:rgba(20,184,166,.12); color:#14b8a6; }
+.vh-icon-purple { background:rgba(139,92,246,.12);  color:#a78bfa; }
+.vh-icon-orange { background:rgba(249,115,22,.12);  color:#fb923c; }
+
+.vh-mod-title { font-size:1rem; font-weight:700; color:#fff; }
+.vh-mod-sub   { font-size:.75rem; color:rgba(255,255,255,.35); margin-top:2px; }
+
+/* Stats row */
+.vh-stats { display:flex; gap:.625rem; }
+.vh-stat {
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:.25rem;
+    padding:.75rem .5rem; border-radius:.875rem;
+    font-size:.7rem;
+}
+.vh-stat svg       { opacity:.7; }
+.vh-stat-n         { font-size:1.375rem; font-weight:800; color:#fff; line-height:1; }
+.vh-stat-l         { color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.05em; font-size:.65rem; }
+
+.vh-stat-amber { background:rgba(251,191,36,.08);  }
+.vh-stat-amber svg { color:#fbbf24; }
+.vh-stat-green { background:rgba(52,211,153,.08);  }
+.vh-stat-green svg { color:#34d399; }
+.vh-stat-red   { background:rgba(251,113,133,.08); }
+.vh-stat-red svg   { color:#fb7185; }
+.vh-stat-blue  { background:rgba(96,165,250,.08);  }
+.vh-stat-blue svg  { color:#60a5fa; }
+
+/* Go to link */
+.vh-goto {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.7rem 1rem; border-radius:.875rem;
+    background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.05);
+    color:rgba(255,255,255,.5); font-size:.8125rem; font-weight:600;
+    text-decoration:none; transition:all .2s;
+}
+.vh-goto:hover { background:rgba(45,212,191,.08); color:#2dd4bf; border-color:rgba(45,212,191,.2); }
+
+/* All clear */
+.vh-allclear {
+    display:flex; flex-direction:column; align-items:center; gap:.75rem;
+    padding:2.5rem; text-align:center;
+    background:#0d1f2d; border:1px dashed rgba(255,255,255,.08); border-radius:1.5rem;
+    color:rgba(255,255,255,.25);
+}
+.vh-allclear-title { font-size:1.125rem; font-weight:700; color:rgba(255,255,255,.5); }
+.vh-allclear p     { font-size:.875rem; color:rgba(255,255,255,.25); }
+
+@media(max-width:900px) {
+    .vh-modules { grid-template-columns:1fr; }
+    .vh-banner  { flex-direction:column; align-items:flex-start; }
+}
