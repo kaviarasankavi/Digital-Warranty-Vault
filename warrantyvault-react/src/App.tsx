@@ -30,7 +30,8 @@ const AdminSettings = lazy(() => import('./pages/Admin/AdminSettings'));
 const AdminAnnouncements = lazy(() => import('./pages/Admin/AdminAnnouncements'));
 const AdminNews = lazy(() => import('./pages/Admin/AdminNews'));
 const AdminAuditLogs = lazy(() => import('./pages/Admin/AdminAuditLogs'));
-const AdminUsers = lazy(() => import('./pages/Admin/AdminUsers'));
+const AdminUsers      = lazy(() => import('./pages/Admin/AdminUsers'));
+const AdminAnalytics  = lazy(() => import('./pages/Admin/AdminAnalytics'));
 
 // ── Vendor pages (lazy) ───────────────────────────────────────────────────────
 const VendorLayout    = lazy(() => import('./pages/Vendor/VendorLayout'));
@@ -143,8 +144,9 @@ function App() {
                                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                                 <Route path="announcements" element={<AdminAnnouncements />} />
                                 <Route path="news" element={<AdminNews />} />
-                                <Route path="users" element={<AdminUsers />} />
-                                <Route path="settings" element={<AdminSettings />} />
+                                <Route path="users"      element={<AdminUsers />} />
+                                <Route path="analytics"  element={<AdminAnalytics />} />
+                                <Route path="settings"   element={<AdminSettings />} />
                             </Route>
                         </Route>
 

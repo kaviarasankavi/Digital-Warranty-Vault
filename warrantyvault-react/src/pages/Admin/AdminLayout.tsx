@@ -30,8 +30,9 @@ const navItems = [
     { path: '/admin/audit-logs', icon: Activity, label: 'Audit Logs' },
     { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
     { path: '/admin/news', icon: Newspaper, label: 'News Articles' },
-    { path: '/admin/users', icon: UserCircle, label: "Users' Info" },
-    { path: '/admin/settings', icon: Settings, label: 'Settings' },
+    { path: '/admin/users',         icon: UserCircle, label: "Users' Info"   },
+    { path: '/admin/analytics',     icon: BarChart3,  label: 'Analytics'     },
+    { path: '/admin/settings',      icon: Settings,   label: 'Settings'      },
 ];
 
 function PageLoader() {

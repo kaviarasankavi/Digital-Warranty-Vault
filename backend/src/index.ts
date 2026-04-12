@@ -19,6 +19,7 @@ import warrantyExtensionRoutes from './routes/warrantyExtensionRoutes';
 import warrantyClaimRoutes from './routes/warrantyClaimRoutes';
 import certificateRoutes from './routes/certificateRoutes';
 import vendorSettingsRoutes from './routes/vendorSettingsRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/api/warranty-extension', warrantyExtensionRoutes);
 app.use('/api/claims', warrantyClaimRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/vendor/settings', vendorSettingsRoutes);
+app.use('/api/admin',           adminRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────
 app.use((req, res) => {
