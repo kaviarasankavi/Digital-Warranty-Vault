@@ -5,7 +5,6 @@ import {
     ShieldCheck,
     ScanLine,
     BarChart3,
-    Users,
     Settings,
     Shield,
     LogOut,
@@ -29,7 +28,6 @@ const navItems = [
     { path: '/warranty-claims',    icon: Wrench,          label: 'Repair Claims'     },
     { path: '/certificates',       icon: Award,           label: 'Certificates'      },
     { path: '/analytics',          icon: BarChart3,       label: 'Analytics'         },
-    { path: '/owners',             icon: Users,           label: 'Ownership'         },
     { path: '/settings',           icon: Settings,        label: 'Settings'          },
 ];
 
