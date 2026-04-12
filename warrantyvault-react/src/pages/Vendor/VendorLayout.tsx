@@ -6,7 +6,6 @@ import {
     Store,
     ChevronRight,
     Bell,
-    User,
     BadgeCheck,
     CalendarPlus,
     Wrench,

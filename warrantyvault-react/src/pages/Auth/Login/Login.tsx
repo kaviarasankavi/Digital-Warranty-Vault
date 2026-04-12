@@ -74,7 +74,7 @@ export default function Login() {
                 );
                 // Route by role
                 if (user.role === 'vendor') {
-                    navigate('/vendor/dashboard');
+                    navigate('/vendor/home');
                 } else {
                     navigate('/dashboard');
                 }
