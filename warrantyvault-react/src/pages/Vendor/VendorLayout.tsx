@@ -1,18 +1,11 @@
 import { Suspense, useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-    LayoutDashboard,
-    Package,
-    ShieldCheck,
-    BarChart3,
     Settings,
     LogOut,
     Store,
     ChevronRight,
     Bell,
-    Tag,
-    ClipboardList,
-    MessageSquare,
     User,
     BadgeCheck,
     CalendarPlus,
@@ -25,17 +18,10 @@ import { warrantyClaimApi } from '../../api/warrantyClaimApi';
 import './VendorLayout.css';
 
 const navItems = [
-    { path: '/vendor/dashboard',  icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/vendor/products',   icon: Package,         label: 'My Products' },
-    { path: '/vendor/warranties', icon: ShieldCheck,     label: 'Warranties' },
-    { path: '/vendor/orders',     icon: ClipboardList,   label: 'Orders' },
-    { path: '/vendor/catalog',     icon: Tag,             label: 'Catalog' },
-    { path: '/vendor/verify',      icon: BadgeCheck,      label: 'Verify Requests',  badge: 'verify'     },
-    { path: '/vendor/extensions',  icon: CalendarPlus,    label: 'Extensions',       badge: 'extension'  },
-    { path: '/vendor/claims',      icon: Wrench,          label: 'Repair Claims',    badge: 'claims'     },
-    { path: '/vendor/analytics',   icon: BarChart3,       label: 'Analytics' },
-    { path: '/vendor/support',    icon: MessageSquare,   label: 'Support' },
-    { path: '/vendor/settings',   icon: Settings,        label: 'Settings' },
+    { path: '/vendor/verify',      icon: BadgeCheck,   label: 'Verify Requests', badge: 'verify'    },
+    { path: '/vendor/extensions',  icon: CalendarPlus, label: 'Extensions',      badge: 'extension' },
+    { path: '/vendor/claims',      icon: Wrench,       label: 'Repair Claims',   badge: 'claims'    },
+    { path: '/vendor/settings',    icon: Settings,     label: 'Settings'                            },
 ];
 
 function PageLoader() {
@@ -117,25 +103,6 @@ export default function VendorLayout() {
                     </nav>
                 </div>
 
-                {/* Mini Stats */}
-                <div className="vd-sidebar-stats">
-                    <div className="vd-stat-title">Store Health</div>
-                    <div className="vd-stat-row">
-                        <span className="vd-stat-dot teal" />
-                        <span className="vd-stat-label">Active Listings</span>
-                        <span className="vd-stat-val">—</span>
-                    </div>
-                    <div className="vd-stat-row">
-                        <span className="vd-stat-dot amber" />
-                        <span className="vd-stat-label">Pending Claims</span>
-                        <span className="vd-stat-val">—</span>
-                    </div>
-                    <div className="vd-stat-row">
-                        <span className="vd-stat-dot coral" />
-                        <span className="vd-stat-label">Expiring Soon</span>
-                        <span className="vd-stat-val">—</span>
-                    </div>
-                </div>
 
                 {/* Profile */}
                 <div className="vd-sidebar-user">
