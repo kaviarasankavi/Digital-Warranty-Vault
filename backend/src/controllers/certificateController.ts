@@ -5,6 +5,7 @@ import { AuthorizationError, NotFoundError } from '../utils/errors';
 import { WarrantyCertificate, generateCertId } from '../models/WarrantyCertificate';
 import { generateCertificatePDF } from '../services/certificateService';
 import { logger } from '../utils/logger';
+import { createCertificateNode } from '../services/neo4jGraphService';
 
 // ── Automatically called from verificationController.verifyRequest ──────────
 export async function issueCertificate(opts: {
@@ -28,7 +29,7 @@ export async function issueCertificate(opts: {
         });
         if (existing) return;
 
-        await WarrantyCertificate.create({
+        const cert = await WarrantyCertificate.create({
             certificateId:         generateCertId(),
             verificationRequestId: opts.verificationRequestId,
             productId:             opts.productId,
@@ -43,6 +44,18 @@ export async function issueCertificate(opts: {
             vendorNote:            opts.vendorNote,
             verifiedAt:            opts.verifiedAt,
         });
+
+        // ── Neo4j: create Certificate node + RESULTED_IN relationship ────────
+        createCertificateNode({
+            certificateId:         cert.certificateId,
+            verificationRequestId: opts.verificationRequestId,
+            productId:             opts.productId,
+            serialNumber:          opts.serialNumber,
+            userId:                opts.userId,
+            vendorEmail:           opts.vendorEmail,
+            issuedAt:              cert.issuedAt,
+        });
+        // ─────────────────────────────────────────────────────────────────
 
         logger.info(`Certificate issued for productId=${opts.productId} (${opts.productName})`);
     } catch (err) {

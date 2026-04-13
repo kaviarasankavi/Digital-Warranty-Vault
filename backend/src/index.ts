@@ -21,6 +21,7 @@ import certificateRoutes from './routes/certificateRoutes';
 import vendorSettingsRoutes from './routes/vendorSettingsRoutes';
 import adminRoutes from './routes/adminRoutes';
 import disputeRoutes from './routes/disputeRoutes';
+import graphRoutes from './routes/graphRoutes';
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use('/api/certificates', certificateRoutes);
 app.use('/api/vendor/settings', vendorSettingsRoutes);
 app.use('/api/admin',           adminRoutes);
 app.use('/api/disputes', disputeRoutes);
+app.use('/api/graph',    graphRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────
 app.use((req, res) => {

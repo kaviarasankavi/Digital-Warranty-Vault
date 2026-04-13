@@ -4,6 +4,11 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ValidationError, AuthorizationError, NotFoundError } from '../utils/errors';
 import { VerificationRequest } from '../models/VerificationRequest';
 import { issueCertificate } from './certificateController';
+import {
+    createVerificationRequestNode,
+    markVerificationVerified,
+    markVerificationRejected,
+} from '../services/neo4jGraphService';
 
 // ── Brand → Vendor email map ──────────────────────────────────────────────────
 const BRAND_MAP: Record<string, string> = {
@@ -64,6 +69,21 @@ export const createVerificationRequest = asyncHandler(
             vendorEmail,
             status: 'pending',
         });
+
+        // ── Neo4j: create verification request graph nodes ────────────────
+        createVerificationRequestNode({
+            requestId:    String(request._id),
+            userId:       String(user._id),
+            userName:     user.name,
+            userEmail:    user.email,
+            productId,
+            productName,
+            brand,
+            serialNumber: serialNumber ?? '',
+            vendorEmail,
+            requestedAt:  request.requestedAt,
+        });
+        // ─────────────────────────────────────────────────────────────────
 
         res.status(201).json({
             success: true,
@@ -149,6 +169,14 @@ export const verifyRequest = asyncHandler(
         request.vendorNote = req.body.note ?? '';
         await request.save();
 
+        // ── Neo4j: mark verified + vendor relationship ────────────────────
+        markVerificationVerified(
+            String(request._id),
+            request.vendorNote,
+            request.verifiedAt!
+        );
+        // ─────────────────────────────────────────────────────────────────
+
         // Auto-issue a certificate
         issueCertificate({
             verificationRequestId: String(request._id),
@@ -188,6 +216,14 @@ export const rejectRequest = asyncHandler(
         request.verifiedAt = new Date();
         request.vendorNote = req.body.note ?? '';
         await request.save();
+
+        // ── Neo4j: mark rejected ──────────────────────────────────────────
+        markVerificationRejected(
+            String(request._id),
+            request.vendorNote,
+            request.verifiedAt!
+        );
+        // ─────────────────────────────────────────────────────────────────
 
         res.json({ success: true, message: 'Request rejected.', data: request });
     }
